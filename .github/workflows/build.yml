@@ -19,7 +19,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: 8.14.3
+          gradle-version: 9.2.0
 
       - name: Extract project
         run: unzip ZhanVisuals-3.0-Source.zip
