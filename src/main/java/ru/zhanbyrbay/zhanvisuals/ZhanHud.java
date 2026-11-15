@@ -4,16 +4,18 @@ package ru.zhanbyrbay.zhanvisuals;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.EntityHitResult;
 
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class ZhanHud {
 
@@ -43,10 +45,12 @@ public class ZhanHud {
 
         List<String> lines = new ArrayList<>();
 
+        // FPS Counter
         if (ZhanVisuals.fpsCounter) {
             lines.add("FPS: " + client.getFps());
         }
 
+        // Coordinates
         if (ZhanVisuals.coordinates) {
 
             double x = client.player.getX();
@@ -54,17 +58,29 @@ public class ZhanHud {
             double z = client.player.getZ();
 
             lines.add(String.format(
-                java.util.Locale.ROOT,
+                Locale.ROOT,
                 "XYZ: %.1f / %.1f / %.1f",
                 x, y, z
             ));
         }
 
+        // Armor HUD
         if (ZhanVisuals.armorHUD) {
 
             int armor = 0;
 
-            for (ItemStack stack : client.player.getArmorSlots()) {
+            EquipmentSlot[] slots = {
+                EquipmentSlot.HEAD,
+                EquipmentSlot.CHEST,
+                EquipmentSlot.LEGS,
+                EquipmentSlot.FEET
+            };
+
+            for (EquipmentSlot slot : slots) {
+
+                ItemStack stack =
+                    client.player.getItemBySlot(slot);
+
                 if (!stack.isEmpty()) {
                     armor++;
                 }
@@ -73,26 +89,34 @@ public class ZhanHud {
             lines.add("Armor: " + armor + "/4");
         }
 
+        // Totem Counter
         if (ZhanVisuals.totemCounter) {
 
             int totems = 0;
 
-            for (ItemStack stack : client.player.getInventory().items) {
+            // Main inventory
+            for (int i = 0; i < 36; i++) {
+
+                ItemStack stack =
+                    client.player.getInventory().getItem(i);
+
                 if (stack.is(Items.TOTEM_OF_UNDYING)) {
                     totems += stack.getCount();
                 }
             }
 
-            for (ItemStack stack : client.player.getInventory().offhand) {
-                if (stack.is(Items.TOTEM_OF_UNDYING)) {
-                    totems += stack.getCount();
-                }
+            // Offhand
+            ItemStack offhand =
+                client.player.getOffhandItem();
+
+            if (offhand.is(Items.TOTEM_OF_UNDYING)) {
+                totems += offhand.getCount();
             }
 
             lines.add("Totems: " + totems);
         }
 
-        // HUD panel
+        // Draw HUD
         if (!lines.isEmpty()) {
 
             int panelHeight = 8 + lines.size() * 13;
