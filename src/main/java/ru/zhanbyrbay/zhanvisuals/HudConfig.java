@@ -19,8 +19,7 @@ public final class HudConfig {
         .resolve("zhanvisuals")
         .resolve("hud.properties");
 
-    private HudConfig() {
-    }
+    private HudConfig() {}
 
     public static void load() {
         try {
@@ -32,52 +31,44 @@ public final class HudConfig {
                 }
             }
 
-            ZhanHud.setPosition(
-                "watermark",
-                get("watermark.x", 8),
-                get("watermark.y", 8)
-            );
+            ZhanHud.setPosition("watermark",
+                get("watermark.x", 8), get("watermark.y", 8));
 
-            ZhanHud.setPosition(
-                "target",
-                get("target.x", 8),
-                get("target.y", 45)
-            );
+            ZhanHud.setPosition("target",
+                get("target.x", 8), get("target.y", 45));
 
-            ZhanHud.setPosition(
-                "armor",
-                get("armor.x", 8),
-                get("armor.y", 90)
-            );
+            ZhanHud.setPosition("armor",
+                get("armor.x", 8), get("armor.y", 90));
 
-            ZhanHud.setPosition(
-                "speed",
-                get("speed.x", 8),
-                get("speed.y", 130)
-            );
+            ZhanHud.setPosition("speed",
+                get("speed.x", 8), get("speed.y", 130));
 
         } catch (IOException e) {
             System.err.println("[ZhanVisuals] HUD config load error: " + e.getMessage());
         }
     }
 
-    public static void savePosition(String element, int x, int y) {
-        properties.setProperty(element + ".x", String.valueOf(x));
-        properties.setProperty(element + ".y", String.valueOf(y));
-        save();
-    }
+    public static void saveAll() {
+        properties.setProperty("watermark.x",
+            String.valueOf(ZhanHud.getX("watermark")));
+        properties.setProperty("watermark.y",
+            String.valueOf(ZhanHud.getY("watermark")));
 
-    public static int get(String key, int defaultValue) {
-        try {
-            return Integer.parseInt(
-                properties.getProperty(key, String.valueOf(defaultValue))
-            );
-        } catch (NumberFormatException e) {
-            return defaultValue;
-        }
-    }
+        properties.setProperty("target.x",
+            String.valueOf(ZhanHud.getX("target")));
+        properties.setProperty("target.y",
+            String.valueOf(ZhanHud.getY("target")));
 
-    public static void save() {
+        properties.setProperty("armor.x",
+            String.valueOf(ZhanHud.getX("armor")));
+        properties.setProperty("armor.y",
+            String.valueOf(ZhanHud.getY("armor")));
+
+        properties.setProperty("speed.x",
+            String.valueOf(ZhanHud.getX("speed")));
+        properties.setProperty("speed.y",
+            String.valueOf(ZhanHud.getY("speed")));
+
         try {
             Files.createDirectories(FILE.getParent());
 
@@ -87,6 +78,16 @@ public final class HudConfig {
 
         } catch (IOException e) {
             System.err.println("[ZhanVisuals] HUD config save error: " + e.getMessage());
+        }
+    }
+
+    private static int get(String key, int fallback) {
+        try {
+            return Integer.parseInt(
+                properties.getProperty(key, String.valueOf(fallback))
+            );
+        } catch (NumberFormatException e) {
+            return fallback;
         }
     }
 }
