@@ -9,25 +9,33 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Setup Gradle 9.2.0
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 9.2.0
 
-      - name: Extract project
-        run: unzip ZhanVisuals-3.0-Source.zip
+      - name: Check project
+        run: |
+          ls -la
+          find . -name build.gradle -o -name build.gradle.kts
 
       - name: Build mod
-        run: gradle -p ZhanVisuals-3.0 build --no-daemon
+        run: gradle build --no-daemon
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
         with:
           name: ZhanVisuals-JAR
-          path: ZhanVisuals-3.0/build/libs/*.jar
+          path: build/libs/*.jar
+          if-no-files-found: error
