@@ -6,8 +6,7 @@
   "compatibilityLevel": "JAVA_21",
   "refmap": "zhanvisuals.refmap.json",
   "client": [
-    "LevelRendererMixin",
-    "GuiMixin"
+    "LevelRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1
