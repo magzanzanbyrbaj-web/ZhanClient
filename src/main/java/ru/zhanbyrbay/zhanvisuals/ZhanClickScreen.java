@@ -1,10 +1,11 @@
 
 package ru.zhanbyrbay.zhanvisuals;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
 
 public class ZhanClickScreen extends Screen {
 
@@ -98,11 +99,12 @@ public class ZhanClickScreen extends Screen {
 
     private int contentX;
     private int contentY;
-    private int sidebarW = 104;
+    private int sidebarW;
     private int cardWidth;
     private int startY;
 
-    private String hoveredDescription = "Наведите на модуль, чтобы увидеть описание.";
+    private String hoveredDescription =
+        "Наведите на модуль, чтобы увидеть описание.";
 
     public ZhanClickScreen() {
         super(Component.literal("ZhanVisuals"));
@@ -151,11 +153,23 @@ public class ZhanClickScreen extends Screen {
                 );
             }
 
-            g.fill(x + inset, y + row, x + w - inset, y + row + 1, color);
+            g.fill(
+                x + inset,
+                y + row,
+                x + w - inset,
+                y + row + 1,
+                color
+            );
         }
     }
 
-    private void draw(String text, GuiGraphics g, int x, int y, int color) {
+    private void draw(
+        String text,
+        GuiGraphics g,
+        int x,
+        int y,
+        int color
+    ) {
         g.drawString(font, text, x, y, color, false);
     }
 
@@ -178,7 +192,7 @@ public class ZhanClickScreen extends Screen {
             panelW, panelH, 10, PANEL
         );
 
-        // Header
+        // HEADER
         rounded(
             g, panelX + 1, panelY + 1,
             panelW - 2, 43, 9, 0xFF14111C
@@ -193,19 +207,34 @@ public class ZhanClickScreen extends Screen {
         draw("ZHANVISUALS", g, panelX + 44, panelY + 10, LIGHT);
         draw("КЛИЕНТ  /  1.21.11", g, panelX + 44, panelY + 25, MUTED);
 
-        String version = "PREMIUM";
-        draw(
-            version,
+        // CONFIG BUTTON
+        rounded(
             g,
-            panelX + panelW - font.width(version) - 15,
-            panelY + 19,
+            panelX + panelW - 112,
+            panelY + 8,
+            98,
+            27,
+            6,
+            0xFF352440
+        );
+
+        draw(
+            "CONFIGS",
+            g,
+            panelX + panelW - 101,
+            panelY + 18,
             PURPLE
         );
 
-        // Sidebar
+        // SIDEBAR
         rounded(
-            g, panelX + 8, panelY + 51,
-            sidebarW - 13, panelH - 60, 8, 0xFF121019
+            g,
+            panelX + 8,
+            panelY + 51,
+            sidebarW - 13,
+            panelH - 60,
+            8,
+            0xFF121019
         );
 
         for (int i = 0; i < CATEGORIES.length; i++) {
@@ -214,13 +243,20 @@ public class ZhanClickScreen extends Screen {
 
             if (selected) {
                 rounded(
-                    g, panelX + 12, y,
-                    sidebarW - 21, 29, 6, 0xFF352440
+                    g,
+                    panelX + 12,
+                    y,
+                    sidebarW - 21,
+                    29,
+                    6,
+                    0xFF352440
                 );
 
                 g.fill(
-                    panelX + 12, y + 5,
-                    panelX + 14, y + 24,
+                    panelX + 12,
+                    y + 5,
+                    panelX + 14,
+                    y + 24,
                     PURPLE
                 );
             }
@@ -234,14 +270,22 @@ public class ZhanClickScreen extends Screen {
             );
         }
 
-        // Content heading
+        // CONTENT
         draw(category, g, contentX, contentY, LIGHT);
-        draw("Настройка модулей клиента", g, contentX, contentY + 15, MUTED);
+
+        draw(
+            "Настройка модулей клиента",
+            g,
+            contentX,
+            contentY + 15,
+            MUTED
+        );
 
         String[] modules = MODULES[getCategoryIndex()];
         String[] descriptions = DESCRIPTIONS[getCategoryIndex()];
 
-        hoveredDescription = "Наведите на модуль, чтобы увидеть описание.";
+        hoveredDescription =
+            "Наведите на модуль, чтобы увидеть описание.";
 
         for (int i = 0; i < modules.length; i++) {
             int column = i % 2;
@@ -250,7 +294,9 @@ public class ZhanClickScreen extends Screen {
             int x = contentX + column * (cardWidth + 8);
             int y = startY + row * 33;
 
-            if (y + 27 > panelY + panelH - 39) continue;
+            if (y + 27 > panelY + panelH - 39) {
+                continue;
+            }
 
             boolean enabled = ZhanVisuals.isEnabled(modules[i]);
 
@@ -263,7 +309,12 @@ public class ZhanClickScreen extends Screen {
             }
 
             rounded(
-                g, x, y, cardWidth, 27, 6,
+                g,
+                x,
+                y,
+                cardWidth,
+                27,
+                6,
                 hovered ? HOVER : CARD
             );
 
@@ -278,7 +329,12 @@ public class ZhanClickScreen extends Screen {
             int sx = x + cardWidth - 29;
 
             rounded(
-                g, sx, y + 7, 21, 13, 7,
+                g,
+                sx,
+                y + 7,
+                21,
+                13,
+                7,
                 enabled ? 0xFF7545B5 : 0xFF403B49
             );
 
@@ -293,7 +349,7 @@ public class ZhanClickScreen extends Screen {
             );
         }
 
-        // Description
+        // DESCRIPTION
         g.fill(
             contentX,
             panelY + panelH - 39,
@@ -311,6 +367,7 @@ public class ZhanClickScreen extends Screen {
         );
 
         String close = "RIGHT SHIFT — ЗАКРЫТЬ";
+
         draw(
             close,
             g,
@@ -322,8 +379,11 @@ public class ZhanClickScreen extends Screen {
 
     private int getCategoryIndex() {
         for (int i = 0; i < CATEGORIES.length; i++) {
-            if (CATEGORIES[i].equals(category)) return i;
+            if (CATEGORIES[i].equals(category)) {
+                return i;
+            }
         }
+
         return 0;
     }
 
@@ -335,7 +395,21 @@ public class ZhanClickScreen extends Screen {
         double mx = event.x();
         double my = event.y();
 
-        // Categories
+        // OPEN CONFIG MANAGER
+        if (
+            mx >= panelX + panelW - 112 &&
+            mx <= panelX + panelW - 14 &&
+            my >= panelY + 8 &&
+            my <= panelY + 35
+        ) {
+            Minecraft.getInstance().setScreen(
+                new ConfigManagerScreen()
+            );
+
+            return true;
+        }
+
+        // CATEGORIES
         for (int i = 0; i < CATEGORIES.length; i++) {
             int y = panelY + 61 + i * 37;
 
@@ -350,7 +424,7 @@ public class ZhanClickScreen extends Screen {
             }
         }
 
-        // Modules
+        // MODULES
         String[] modules = MODULES[getCategoryIndex()];
 
         for (int i = 0; i < modules.length; i++) {
@@ -361,8 +435,11 @@ public class ZhanClickScreen extends Screen {
             int y = startY + row * 33;
 
             if (
-                mx >= x && mx <= x + cardWidth &&
-                my >= y && my <= y + 27
+                mx >= x &&
+                mx <= x + cardWidth &&
+                my >= y &&
+                my <= y + 27 &&
+                y + 27 <= panelY + panelH - 39
             ) {
                 ZhanVisuals.toggleModule(modules[i]);
                 return true;
