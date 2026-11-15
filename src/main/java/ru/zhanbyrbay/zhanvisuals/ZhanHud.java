@@ -22,7 +22,6 @@ public class ZhanHud {
     private static final int LIGHT = 0xFFF4EEFF;
     private static final int MUTED = 0xFFAAA1B8;
     private static final int PANEL = 0xE6100E17;
-    private static final int PANEL_LIGHT = 0xFF1B1724;
     private static final int BORDER = 0xFF393044;
 
     public static void register() {
@@ -112,49 +111,18 @@ public class ZhanHud {
         int x = (screenWidth - width) / 2;
         int y = 7;
 
-        rounded(
-            g,
-            x,
-            y,
-            width,
-            height,
-            9,
-            PANEL
-        );
+        rounded(g, x, y, width, height, 9, PANEL);
 
-        // Border and purple accent
         g.fill(
-            x + 9,
-            y + 5,
-            x + 11,
-            y + 20,
+            x + 9, y + 5,
+            x + 11, y + 20,
             PURPLE
         );
 
-        // Small logo pulse
-        g.fill(
-            x + 16,
-            y + 11,
-            x + 19,
-            y + 14,
-            PURPLE
-        );
-
-        g.fill(
-            x + 20,
-            y + 8,
-            x + 22,
-            y + 17,
-            PURPLE
-        );
-
-        g.fill(
-            x + 23,
-            y + 11,
-            x + 26,
-            y + 14,
-            PURPLE
-        );
+        // Logo
+        g.fill(x + 16, y + 11, x + 19, y + 14, PURPLE);
+        g.fill(x + 20, y + 8, x + 22, y + 17, PURPLE);
+        g.fill(x + 23, y + 11, x + 26, y + 14, PURPLE);
 
         g.drawString(
             mc.font,
@@ -168,10 +136,8 @@ public class ZhanHud {
         int separatorX = x + 32 + titleWidth + 9;
 
         g.fill(
-            separatorX,
-            y + 6,
-            separatorX + 1,
-            y + 19,
+            separatorX, y + 6,
+            separatorX + 1, y + 19,
             BORDER
         );
 
@@ -187,10 +153,8 @@ public class ZhanHud {
         int pingX = separatorX + 9 + fpsWidth + 9;
 
         g.fill(
-            pingX - 5,
-            y + 6,
-            pingX - 4,
-            y + 19,
+            pingX - 5, y + 6,
+            pingX - 4, y + 19,
             BORDER
         );
 
@@ -215,6 +179,7 @@ public class ZhanHud {
         if (ZhanVisuals.coordinates) count++;
         if (ZhanVisuals.pingDisplay) count++;
         if (ZhanVisuals.totemCounter) count++;
+        if (ZhanVisuals.speedometer) count++;
 
         if (count == 0) return;
 
@@ -282,6 +247,19 @@ public class ZhanHud {
             drawStat(
                 mc, g, "TOTEMS",
                 String.valueOf(getTotems(mc)),
+                x + 15, textY
+            );
+            textY += lineHeight;
+        }
+
+        if (ZhanVisuals.speedometer) {
+            drawStat(
+                mc, g, "SPEED",
+                String.format(
+                    Locale.ROOT,
+                    "%.1f m/s",
+                    ZhanVisuals.currentSpeed
+                ),
                 x + 15, textY
             );
         }
@@ -454,40 +432,26 @@ public class ZhanHud {
 
         float health = living.getHealth();
         float maxHealth = Math.max(1.0F, living.getMaxHealth());
+
         float ratio = Math.max(
             0.0F,
             Math.min(1.0F, health / maxHealth)
         );
 
-        // Main panel
-        rounded(
-            g,
-            x,
-            y,
-            width,
-            height,
-            8,
-            PANEL
-        );
+        rounded(g, x, y, width, height, 8, PANEL);
 
-        // Border accent
         g.fill(
-            x + 8,
-            y + 7,
-            x + width - 8,
-            y + 8,
+            x + 8, y + 7,
+            x + width - 8, y + 8,
             BORDER
         );
 
         g.fill(
-            x + 9,
-            y + 9,
-            x + 11,
-            y + 43,
+            x + 9, y + 9,
+            x + 11, y + 43,
             PURPLE
         );
 
-        // Entity marker
         rounded(
             g,
             x + 17,
@@ -523,7 +487,6 @@ public class ZhanHud {
             false
         );
 
-        // Health bar
         int barX = x + 17;
         int barY = y + 45;
         int barWidth = width - 34;
