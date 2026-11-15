@@ -3,11 +3,12 @@ package ru.zhanbyrbay.zhanvisuals;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 public class HudEditorScreen extends Screen {
 
-    private String dragging = null;
+    private String dragging;
 
     private int offsetX;
     private int offsetY;
@@ -23,6 +24,10 @@ public class HudEditorScreen extends Screen {
 
     private int speedX;
     private int speedY;
+
+    private static final int PURPLE = 0xFFB66BFF;
+    private static final int PANEL = 0xDD17131F;
+    private static final int TEXT = 0xFFFFFFFF;
 
     public HudEditorScreen() {
         super(Component.literal("ZhanVisuals HUD Editor"));
@@ -48,144 +53,172 @@ public class HudEditorScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX,
-                       int mouseY, float delta) {
+    public void render(
+        GuiGraphics g,
+        int mouseX,
+        int mouseY,
+        float delta
+    ) {
+        g.fill(0, 0, width, height, 0xCC08060D);
 
-        graphics.fill(0, 0, width, height, 0xCC08060D);
+        g.drawCenteredString(
+            font,
+            "ZHANVISUALS HUD EDITOR",
+            width / 2,
+            12,
+            PURPLE
+        );
 
-        graphics.drawCenteredString(font,
-            "ZHANVISUALS | HUD EDITOR",
-            width / 2, 12, 0xFFE4B5FF);
+        g.drawCenteredString(
+            font,
+            "Зажми ЛКМ на элементе и перетащи",
+            width / 2,
+            27,
+            0xFFBBBBBB
+        );
 
-        graphics.drawCenteredString(font,
-            "Зажми ЛКМ на элементе и перетащи его",
-            width / 2, 27, 0xFFBBBBBB);
+        drawElement(g, watermarkX, watermarkY, 125, 22,
+            "ZhanVisuals | 120 FPS");
 
-        drawWatermark(graphics);
-        drawTarget(graphics);
-        drawArmor(graphics);
-        drawSpeed(graphics);
+        drawElement(g, targetX, targetY, 150, 48,
+            "TargetHUD");
 
-        graphics.drawCenteredString(font,
-            "ESC — выйти и сохранить",
-            width / 2, height - 18, 0xFFAAAAAA);
-
-        super.render(graphics, mouseX, mouseY, delta);
-    }
-
-    private void drawWatermark(GuiGraphics g) {
-        g.fill(watermarkX, watermarkY,
-            watermarkX + 125, watermarkY + 22, 0xDD17131F);
-        g.fill(watermarkX, watermarkY,
-            watermarkX + 125, watermarkY + 2, 0xFFB66BFF);
-        g.drawString(font, "ZhanVisuals | FPS",
-            watermarkX + 7, watermarkY + 7, 0xFFFFFFFF);
-    }
-
-    private void drawTarget(GuiGraphics g) {
-        g.fill(targetX, targetY,
-            targetX + 150, targetY + 48, 0xDD17131F);
-        g.fill(targetX, targetY,
-            targetX + 150, targetY + 2, 0xFFB66BFF);
-
-        g.drawString(font, "TargetHUD",
-            targetX + 8, targetY + 8, 0xFFFFFFFF);
         g.drawString(font, "HP: 20 / 20",
             targetX + 8, targetY + 22, 0xFFFF7777);
 
         g.fill(targetX + 8, targetY + 36,
             targetX + 138, targetY + 40, 0xFF39313F);
+
         g.fill(targetX + 8, targetY + 36,
-            targetX + 138, targetY + 40, 0xFFBD72FF);
+            targetX + 138, targetY + 40, PURPLE);
+
+        drawElement(g, armorX, armorY, 100, 22,
+            "Armor HUD");
+
+        drawElement(g, speedX, speedY, 110, 22,
+            "Speedometer");
+
+        g.drawCenteredString(
+            font,
+            "H — открыть редактор | ESC — выйти и сохранить",
+            width / 2,
+            height - 18,
+            0xFFAAAAAA
+        );
+
+        super.render(g, mouseX, mouseY, delta);
     }
 
-    private void drawArmor(GuiGraphics g) {
-        g.fill(armorX, armorY,
-            armorX + 100, armorY + 20, 0xDD17131F);
-        g.fill(armorX, armorY,
-            armorX + 100, armorY + 2, 0xFFB66BFF);
-        g.drawString(font, "Armor HUD",
-            armorX + 8, armorY + 7, 0xFFFFFFFF);
-    }
+    private void drawElement(
+        GuiGraphics g,
+        int x,
+        int y,
+        int w,
+        int h,
+        String text
+    ) {
+        g.fill(x, y, x + w, y + h, PANEL);
+        g.fill(x, y, x + w, y + 2, PURPLE);
 
-    private void drawSpeed(GuiGraphics g) {
-        g.fill(speedX, speedY,
-            speedX + 100, speedY + 22, 0xDD17131F);
-        g.fill(speedX, speedY,
-            speedX + 100, speedY + 2, 0xFFB66BFF);
-        g.drawString(font, "Speedometer",
-            speedX + 7, speedY + 7, 0xFFFFFFFF);
+        g.drawString(
+            font,
+            text,
+            x + 7,
+            y + 7,
+            TEXT
+        );
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button != 0) {
-            return super.mouseClicked(mouseX, mouseY, button);
+    public boolean mouseClicked(
+        MouseButtonEvent event,
+        boolean doubleClick
+    ) {
+        if (event.button() != 0) {
+            return super.mouseClicked(event, doubleClick);
         }
 
-        if (inside(mouseX, mouseY, watermarkX, watermarkY, 125, 22)) {
-            startDragging("watermark", mouseX, mouseY, watermarkX, watermarkY);
+        double mx = event.x();
+        double my = event.y();
+
+        if (inside(mx, my, watermarkX, watermarkY, 125, 22)) {
+            startDragging("watermark", mx, my, watermarkX, watermarkY);
             return true;
         }
 
-        if (inside(mouseX, mouseY, targetX, targetY, 150, 48)) {
-            startDragging("target", mouseX, mouseY, targetX, targetY);
+        if (inside(mx, my, targetX, targetY, 150, 48)) {
+            startDragging("target", mx, my, targetX, targetY);
             return true;
         }
 
-        if (inside(mouseX, mouseY, armorX, armorY, 100, 20)) {
-            startDragging("armor", mouseX, mouseY, armorX, armorY);
+        if (inside(mx, my, armorX, armorY, 100, 22)) {
+            startDragging("armor", mx, my, armorX, armorY);
             return true;
         }
 
-        if (inside(mouseX, mouseY, speedX, speedY, 100, 22)) {
-            startDragging("speed", mouseX, mouseY, speedX, speedY);
+        if (inside(mx, my, speedX, speedY, 110, 22)) {
+            startDragging("speed", mx, my, speedX, speedY);
             return true;
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
-    private void startDragging(String element, double mouseX,
-                               double mouseY, int x, int y) {
+    private void startDragging(
+        String element,
+        double mouseX,
+        double mouseY,
+        int x,
+        int y
+    ) {
         dragging = element;
         offsetX = (int) mouseX - x;
         offsetY = (int) mouseY - y;
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY,
-                                int button, double dragX, double dragY) {
-        if (dragging == null || button != 0) {
-            return super.mouseDragged(mouseX, mouseY,
-                button, dragX, dragY);
+    public boolean mouseDragged(
+        MouseButtonEvent event,
+        double deltaX,
+        double deltaY
+    ) {
+        if (dragging == null || event.button() != 0) {
+            return super.mouseDragged(event, deltaX, deltaY);
         }
 
-        int x = Math.max(0, Math.min(width - 150,
-            (int) mouseX - offsetX));
-        int y = Math.max(0, Math.min(height - 48,
-            (int) mouseY - offsetY));
+        int x = Math.max(
+            0,
+            Math.min(width - 150, (int) event.x() - offsetX)
+        );
+
+        int y = Math.max(
+            0,
+            Math.min(height - 48, (int) event.y() - offsetY)
+        );
 
         switch (dragging) {
             case "watermark" -> {
-                watermarkX = x;
-                watermarkY = y;
-                ZhanHud.setPosition("watermark", x, y);
+                watermarkX = Math.min(x, width - 125);
+                watermarkY = Math.min(y, height - 22);
+                ZhanHud.setPosition("watermark", watermarkX, watermarkY);
             }
+
             case "target" -> {
                 targetX = x;
                 targetY = y;
                 ZhanHud.setPosition("target", x, y);
             }
+
             case "armor" -> {
-                armorX = x;
-                armorY = y;
-                ZhanHud.setPosition("armor", x, y);
+                armorX = Math.min(x, width - 100);
+                armorY = Math.min(y, height - 22);
+                ZhanHud.setPosition("armor", armorX, armorY);
             }
+
             case "speed" -> {
-                speedX = x;
-                speedY = y;
-                ZhanHud.setPosition("speed", x, y);
+                speedX = Math.min(x, width - 110);
+                speedY = Math.min(y, height - 22);
+                ZhanHud.setPosition("speed", speedX, speedY);
             }
         }
 
@@ -193,24 +226,33 @@ public class HudEditorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0) {
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (event.button() == 0 && dragging != null) {
             dragging = null;
             HudConfig.saveAll();
             return true;
         }
 
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
 
-    private boolean inside(double mouseX, double mouseY,
-                           int x, int y, int w, int h) {
-        return mouseX >= x && mouseX <= x + w
-            && mouseY >= y && mouseY <= y + h;
+    private boolean inside(
+        double mouseX,
+        double mouseY,
+        int x,
+        int y,
+        int w,
+        int h
+    ) {
+        return mouseX >= x
+            && mouseX <= x + w
+            && mouseY >= y
+            && mouseY <= y + h;
     }
 
     @Override
     public void onClose() {
+        dragging = null;
         HudConfig.saveAll();
         ZhanHud.setEditing(false);
         super.onClose();
