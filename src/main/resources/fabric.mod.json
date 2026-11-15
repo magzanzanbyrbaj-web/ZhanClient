@@ -3,9 +3,9 @@
   "id": "zhanvisuals",
   "version": "${version}",
   "name": "ZhanVisuals",
-  "description": "Visual client for Minecraft 1.21.11",
+  "description": "Advanced visual client for Minecraft 1.21.11",
   "authors": [
-    "Zhanbyrbay"
+    "Zhanbyrbayy"
   ],
   "environment": "client",
   "entrypoints": {
@@ -13,6 +13,9 @@
       "ru.zhanbyrbay.zhanvisuals.ZhanVisuals"
     ]
   },
+  "mixins": [
+    "zhanvisuals.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.18.1",
     "minecraft": "1.21.11",
