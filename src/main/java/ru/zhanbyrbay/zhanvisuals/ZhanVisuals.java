@@ -6,7 +6,17 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import org.lwjgl.glfw.GLFW;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Properties;
 
 public class ZhanVisuals implements ClientModInitializer {
 
@@ -14,14 +24,13 @@ public class ZhanVisuals implements ClientModInitializer {
 
     private static KeyMapping openMenuKey;
     private static KeyMapping zoomKey;
+    private static KeyMapping autoSwapKey;
 
-    // VISUALS
     public static boolean hitColor = true;
     public static boolean customCrosshair = true;
     public static boolean fullbright = false;
     public static boolean lowFire = false;
 
-    // HUD
     public static boolean watermark = true;
     public static boolean fpsCounter = true;
     public static boolean coordinates = true;
@@ -32,11 +41,9 @@ public class ZhanVisuals implements ClientModInitializer {
     public static boolean keystrokes = true;
     public static boolean speedometer = true;
 
-    // MOVEMENT
     public static boolean zoom = false;
     public static boolean autoSprint = false;
 
-    // NO RENDER
     public static boolean noParticles = false;
     public static boolean noWeather = false;
     public static boolean noPumpkin = false;
@@ -44,8 +51,11 @@ public class ZhanVisuals implements ClientModInitializer {
     public static boolean noHurtCamera = false;
     public static boolean noFluid = false;
 
-    // OTHER
     public static boolean optimized = false;
+    public static boolean autoSwap = false;
+
+    public static String autoSwapItemA = "minecraft:totem_of_undying";
+    public static String autoSwapItemB = "minecraft:ender_pearl";
 
     public static double currentSpeed = 0.0;
 
@@ -58,6 +68,8 @@ public class ZhanVisuals implements ClientModInitializer {
     private static double lastX;
     private static double lastZ;
     private static boolean hasLastPosition = false;
+
+    private static Path configFile;
 
     @Override
     public void onInitializeClient() {
@@ -78,11 +90,27 @@ public class ZhanVisuals implements ClientModInitializer {
             )
         );
 
+        autoSwapKey = KeyBindingHelper.registerKeyBinding(
+            new KeyMapping(
+                "key.zhanvisuals.auto_swap",
+                GLFW.GLFW_KEY_V,
+                KeyMapping.Category.MISC
+            )
+        );
+
+        loadSettings();
+
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
 
             while (openMenuKey.consumeClick()) {
                 if (client.player != null) {
                     client.setScreen(new ZhanClickScreen());
+                }
+            }
+
+            while (autoSwapKey.consumeClick()) {
+                if (autoSwap && client.player != null) {
+                    swapOffhand();
                 }
             }
 
@@ -94,6 +122,142 @@ public class ZhanVisuals implements ClientModInitializer {
         ZhanHud.register();
 
         System.out.println("[ZhanVisuals] Initialized");
+    }
+
+    private static void swapOffhand() {
+        Minecraft mc = Minecraft.getInstance();
+
+        if (mc.player == null || mc.gameMode == null) return;
+
+        ItemStack offhand = mc.player.getOffhandItem();
+
+        String offhandId = getItemId(offhand);
+
+        String wantedId;
+
+        if (offhandId.equals(autoSwapItemA)) {
+            wantedId = autoSwapItemB;
+        } else if (offhandId.equals(autoSwapItemB)) {
+            wantedId = autoSwapItemA;
+        } else {
+            wantedId = autoSwapItemA;
+        }
+
+        Item wantedItem = BuiltInRegistries.ITEM.get(
+            ResourceLocation.tryParse(wantedId)
+        );
+
+        if (wantedItem == null) return;
+
+        for (int slot = 0; slot < 36; slot++) {
+            ItemStack stack = mc.player.getInventory().getItem(slot);
+
+            if (stack.isEmpty() || stack.getItem() != wantedItem) {
+                continue;
+            }
+
+            int menuSlot;
+
+            if (slot < 9) {
+                menuSlot = slot + 36;
+            } else {
+                menuSlot = slot;
+            }
+
+            mc.gameMode.handleInventoryMouseClick(
+                mc.player.inventoryMenu.containerId,
+                menuSlot,
+                40,
+                ClickType.SWAP,
+                mc.player
+            );
+
+            return;
+        }
+    }
+
+    private static String getItemId(ItemStack stack) {
+        if (stack.isEmpty()) return "";
+
+        return BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+    }
+
+    public static void saveSettings() {
+        try {
+            if (configFile == null) {
+                configFile = Minecraft.getInstance().gameDirectory.toPath()
+                    .resolve("config/zhanvisuals/settings.properties");
+            }
+
+            Files.createDirectories(configFile.getParent());
+
+            Properties p = new Properties();
+
+            p.setProperty("autoSwap", String.valueOf(autoSwap));
+            p.setProperty("autoSwapItemA", autoSwapItemA);
+            p.setProperty("autoSwapItemB", autoSwapItemB);
+
+            p.setProperty("hitColor", String.valueOf(hitColor));
+            p.setProperty("customCrosshair", String.valueOf(customCrosshair));
+            p.setProperty("fullbright", String.valueOf(fullbright));
+            p.setProperty("lowFire", String.valueOf(lowFire));
+
+            p.setProperty("watermark", String.valueOf(watermark));
+            p.setProperty("fpsCounter", String.valueOf(fpsCounter));
+            p.setProperty("coordinates", String.valueOf(coordinates));
+            p.setProperty("armorHUD", String.valueOf(armorHUD));
+            p.setProperty("totemCounter", String.valueOf(totemCounter));
+            p.setProperty("pingDisplay", String.valueOf(pingDisplay));
+            p.setProperty("targetHUD", String.valueOf(targetHUD));
+            p.setProperty("keystrokes", String.valueOf(keystrokes));
+            p.setProperty("speedometer", String.valueOf(speedometer));
+
+            try (var out = Files.newOutputStream(configFile)) {
+                p.store(out, "ZhanVisuals settings");
+            }
+
+        } catch (IOException e) {
+            System.err.println("[ZhanVisuals] Save error: " + e.getMessage());
+        }
+    }
+
+    public static void loadSettings() {
+        try {
+            if (configFile == null) {
+                configFile = Minecraft.getInstance().gameDirectory.toPath()
+                    .resolve("config/zhanvisuals/settings.properties");
+            }
+
+            if (!Files.exists(configFile)) return;
+
+            Properties p = new Properties();
+
+            try (var in = Files.newInputStream(configFile)) {
+                p.load(in);
+            }
+
+            autoSwap = Boolean.parseBoolean(p.getProperty("autoSwap", "false"));
+            autoSwapItemA = p.getProperty("autoSwapItemA", autoSwapItemA);
+            autoSwapItemB = p.getProperty("autoSwapItemB", autoSwapItemB);
+
+            hitColor = Boolean.parseBoolean(p.getProperty("hitColor", "true"));
+            customCrosshair = Boolean.parseBoolean(p.getProperty("customCrosshair", "true"));
+            fullbright = Boolean.parseBoolean(p.getProperty("fullbright", "false"));
+            lowFire = Boolean.parseBoolean(p.getProperty("lowFire", "false"));
+
+            watermark = Boolean.parseBoolean(p.getProperty("watermark", "true"));
+            fpsCounter = Boolean.parseBoolean(p.getProperty("fpsCounter", "true"));
+            coordinates = Boolean.parseBoolean(p.getProperty("coordinates", "true"));
+            armorHUD = Boolean.parseBoolean(p.getProperty("armorHUD", "true"));
+            totemCounter = Boolean.parseBoolean(p.getProperty("totemCounter", "true"));
+            pingDisplay = Boolean.parseBoolean(p.getProperty("pingDisplay", "true"));
+            targetHUD = Boolean.parseBoolean(p.getProperty("targetHUD", "true"));
+            keystrokes = Boolean.parseBoolean(p.getProperty("keystrokes", "true"));
+            speedometer = Boolean.parseBoolean(p.getProperty("speedometer", "true"));
+
+        } catch (IOException e) {
+            System.err.println("[ZhanVisuals] Load error: " + e.getMessage());
+        }
     }
 
     private static void updateZoom(Minecraft mc) {
@@ -149,7 +313,6 @@ public class ZhanVisuals implements ClientModInitializer {
         if (hasLastPosition) {
             double dx = x - lastX;
             double dz = z - lastZ;
-
             currentSpeed = Math.sqrt(dx * dx + dz * dz) * 20.0;
         }
 
@@ -186,6 +349,7 @@ public class ZhanVisuals implements ClientModInitializer {
             case "No Fluid" -> noFluid;
 
             case "Performance Boost" -> optimized;
+            case "AutoSwap" -> autoSwap;
             default -> false;
         };
     }
@@ -222,7 +386,10 @@ public class ZhanVisuals implements ClientModInitializer {
             case "No Fluid" -> noFluid = !noFluid;
 
             case "Performance Boost" -> toggleOptimization();
+            case "AutoSwap" -> autoSwap = !autoSwap;
         }
+
+        saveSettings();
     }
 
     private static void toggleFullbright() {
@@ -245,13 +412,8 @@ public class ZhanVisuals implements ClientModInitializer {
             previousRenderDistance = mc.options.renderDistance().get();
             previousSimulationDistance = mc.options.simulationDistance().get();
 
-            mc.options.renderDistance().set(
-                Math.min(previousRenderDistance, 6)
-            );
-
-            mc.options.simulationDistance().set(
-                Math.min(previousSimulationDistance, 4)
-            );
+            mc.options.renderDistance().set(Math.min(previousRenderDistance, 6));
+            mc.options.simulationDistance().set(Math.min(previousSimulationDistance, 4));
 
             optimized = true;
         } else {
