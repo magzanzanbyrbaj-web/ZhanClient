@@ -1,76 +1,203 @@
+
 package ru.zhanbyrbay.zhanvisuals;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+
+import java.util.Set;
+import java.util.HashSet;
 
 public class ZhanClickScreen extends Screen {
 
+    private static final Identifier FONT =
+        Identifier.fromNamespaceAndPath("zhanvisuals", "ui");
+
+    private static final String[] CATEGORIES = {
+        "Combat", "Visuals", "HUD", "Player", "Settings"
+    };
+
+    private static final String[][] MODULES = {
+        {"Hit Indicator", "Combo Counter", "CPS Counter"},
+        {"Low Fire", "Fullbright", "Custom Crosshair", "Hit Particles"},
+        {"FPS Counter", "Coordinates", "Armor HUD", "Totem Counter"},
+        {"Item Physics", "Animations", "Motion Blur"},
+        {"Interface", "Color Theme", "Configuration"}
+    };
+
+    private final Set<String> enabled = new HashSet<>();
+    private int selectedCategory = 1;
+
+    private int panelX, panelY;
+
     public ZhanClickScreen() {
-        super(Component.literal("ZhanVisuals 3.0"));
+        super(Component.literal("ZhanVisuals"));
+    }
+
+    private Component custom(String text) {
+        return Component.literal(text)
+            .withStyle(style -> style.withFont(FONT));
     }
 
     @Override
-    protected void init() {
-        int centerX = this.width / 2;
-        int centerY = this.height / 2;
+    public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
+        // No blur: avoids the previous rendering crash.
+        g.fill(0, 0, width, height, 0x9905080D);
 
-        this.addRenderableWidget(
-            net.minecraft.client.gui.components.Button.builder(
-                Component.literal("Close"),
-                button -> this.onClose()
-            ).bounds(centerX - 60, centerY + 65, 120, 20).build()
-        );
+        int w = Math.min(600, width - 24);
+        int h = Math.min(310, height - 24);
+
+        panelX = (width - w) / 2;
+        panelY = (height - h) / 2;
+
+        int x = panelX;
+        int y = panelY;
+
+        // Main window
+        g.fill(x, y, x + w, y + h, 0xF20C0E14);
+        g.fill(x, y, x + w, y + 3, 0xFFFF3030);
+
+        // Sidebar
+        g.fill(x, y + 3, x + 135, y + h, 0xFF11141C);
+
+        // Logo
+        g.drawString(font, custom("ZHANVISUALS"), x + 16, y + 17,
+            0xFFFF414D, false);
+
+        g.drawString(font, custom("3.0"), x + 103, y + 17,
+            0xFF777D8B, false);
+
+        g.fill(x + 14, y + 37, x + 120, y + 38, 0xFF292D38);
+
+        // Categories
+        for (int i = 0; i < CATEGORIES.length; i++) {
+            int cy = y + 51 + i * 35;
+            boolean selected = selectedCategory == i;
+            boolean hovered = mouseX >= x + 9 && mouseX <= x + 126
+                && mouseY >= cy - 9 && mouseY <= cy + 20;
+
+            if (selected) {
+                g.fill(x + 9, cy - 9, x + 126, cy + 20, 0xFF29202A);
+                g.fill(x + 9, cy - 9, x + 12, cy + 20, 0xFFFF3548);
+            } else if (hovered) {
+                g.fill(x + 9, cy - 9, x + 126, cy + 20, 0xFF1B1E28);
+            }
+
+            g.drawString(font, custom(CATEGORIES[i]), x + 21, cy,
+                selected ? 0xFFFF5967 : 0xFFB5B8C3, false);
+        }
+
+        // Footer
+        g.drawString(font, custom("Zhanbyrbay"),
+            x + 15, y + h - 23, 0xFF777D8B, false);
+
+        // Content
+        int contentX = x + 155;
+
+        g.drawString(font, custom(CATEGORIES[selectedCategory].toUpperCase()),
+            contentX, y + 20, 0xFFFFFFFF, false);
+
+        g.drawString(font, custom("Customize your experience"),
+            contentX, y + 37, 0xFF858B99, false);
+
+        // Module cards
+        String[] modules = MODULES[selectedCategory];
+
+        int cardW = Math.min(190, (w - 190) / 2);
+        int cardH = 53;
+
+        for (int i = 0; i < modules.length; i++) {
+            int col = i % 2;
+            int row = i / 2;
+
+            int cx = contentX + col * (cardW + 12);
+            int cy = y + 65 + row * 65;
+
+            boolean active = enabled.contains(modules[i]);
+            boolean hovered = mouseX >= cx && mouseX <= cx + cardW
+                && mouseY >= cy && mouseY <= cy + cardH;
+
+            g.fill(cx, cy, cx + cardW, cy + cardH,
+                hovered ? 0xFF242936 : 0xFF191D27);
+
+            g.fill(cx, cy, cx + 2, cy + cardH,
+                active ? 0xFFFF3548 : 0xFF343946);
+
+            g.drawString(font, custom(modules[i]),
+                cx + 12, cy + 12, 0xFFE8EAF0, false);
+
+            // Toggle background
+            int tx = cx + cardW - 37;
+            int ty = cy + 31;
+
+            g.fill(tx, ty, tx + 25, ty + 12,
+                active ? 0xFFB82D42 : 0xFF343946);
+
+            int knobX = active ? tx + 15 : tx + 2;
+
+            g.fill(knobX, ty + 2, knobX + 8, ty + 10,
+                0xFFFFFFFF);
+
+            g.drawString(font, custom(active ? "ON" : "OFF"),
+                cx + 12, cy + 32,
+                active ? 0xFFFF6672 : 0xFF777D8B, false);
+        }
+
+        // Bottom hint
+        g.drawString(font, custom("RIGHT SHIFT  /  CLOSE"),
+            contentX, y + h - 19, 0xFF626977, false);
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
-        this.renderBackground(graphics, mouseX, mouseY, delta);
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
 
-        int centerX = this.width / 2;
-        int centerY = this.height / 2;
+        int x = panelX;
+        int y = panelY;
+        int w = Math.min(600, width - 24);
 
-        graphics.fill(
-            centerX - 150,
-            centerY - 100,
-            centerX + 150,
-            centerY + 100,
-            0xEE151515
-        );
+        // Category selection
+        for (int i = 0; i < CATEGORIES.length; i++) {
+            int cy = y + 51 + i * 35;
 
-        graphics.fill(
-            centerX - 150,
-            centerY - 100,
-            centerX + 150,
-            centerY - 97,
-            0xFFFF3030
-        );
+            if (mouseX >= x + 9 && mouseX <= x + 126
+                && mouseY >= cy - 9 && mouseY <= cy + 20) {
+                selectedCategory = i;
+                return true;
+            }
+        }
 
-        graphics.drawCenteredString(
-            this.font,
-            "ZHANVISUALS 3.0",
-            centerX,
-            centerY - 80,
-            0xFFFF3030
-        );
+        // Module selection
+        int contentX = x + 155;
+        int cardW = Math.min(190, (w - 190) / 2);
+        int cardH = 53;
 
-        graphics.drawCenteredString(
-            this.font,
-            "Visual Client",
-            centerX,
-            centerY - 55,
-            0xFFFFFFFF
-        );
+        String[] modules = MODULES[selectedCategory];
 
-        graphics.drawCenteredString(
-            this.font,
-            "Right Shift - Open Menu",
-            centerX,
-            centerY + 40,
-            0xFFAAAAAA
-        );
+        for (int i = 0; i < modules.length; i++) {
+            int col = i % 2;
+            int row = i / 2;
 
-        super.render(graphics, mouseX, mouseY, delta);
+            int cx = contentX + col * (cardW + 12);
+            int cy = y + 65 + row * 65;
+
+            if (mouseX >= cx && mouseX <= cx + cardW
+                && mouseY >= cy && mouseY <= cy + cardH) {
+
+                String name = modules[i];
+
+                if (enabled.contains(name)) {
+                    enabled.remove(name);
+                } else {
+                    enabled.add(name);
+                }
+
+                return true;
+            }
+        }
+
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
