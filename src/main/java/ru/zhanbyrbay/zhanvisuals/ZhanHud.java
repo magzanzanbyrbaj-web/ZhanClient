@@ -18,10 +18,12 @@ public class ZhanHud {
 
     private static boolean registered = false;
 
-    private static final int PURPLE = 0xFFB77CFF;
-    private static final int LIGHT_PURPLE = 0xFFDCC4FF;
-    private static final int PANEL = 0xD914101F;
-    private static final int MUTED = 0xFFAAA0B8;
+    private static final int PURPLE = 0xFFAA78FF;
+    private static final int LIGHT = 0xFFF4EEFF;
+    private static final int MUTED = 0xFFAAA1B8;
+    private static final int PANEL = 0xE6100E17;
+    private static final int PANEL_LIGHT = 0xFF1B1724;
+    private static final int BORDER = 0xFF393044;
 
     public static void register() {
         if (registered) return;
@@ -34,6 +36,42 @@ public class ZhanHud {
             ),
             (graphics, tickCounter) -> render(graphics)
         );
+    }
+
+    private static void rounded(
+        GuiGraphics g,
+        int x,
+        int y,
+        int w,
+        int h,
+        int radius,
+        int color
+    ) {
+        radius = Math.min(radius, Math.min(w / 2, h / 2));
+
+        for (int row = 0; row < h; row++) {
+            int inset = 0;
+
+            if (row < radius) {
+                double dy = radius - row - 0.5;
+                inset = radius - (int)Math.sqrt(
+                    Math.max(0, radius * radius - dy * dy)
+                );
+            } else if (row >= h - radius) {
+                double dy = row - (h - radius) + 0.5;
+                inset = radius - (int)Math.sqrt(
+                    Math.max(0, radius * radius - dy * dy)
+                );
+            }
+
+            g.fill(
+                x + inset,
+                y + row,
+                x + w - inset,
+                y + row + 1,
+                color
+            );
+        }
     }
 
     private static void render(GuiGraphics g) {
@@ -58,72 +96,119 @@ public class ZhanHud {
     ) {
         if (!ZhanVisuals.watermark) return;
 
-        int x = 8;
-        int y = 8;
-
-        int fps = mc.getFps();
-        int ping = getPing(mc);
+        int screenWidth = mc.getWindow().getGuiScaledWidth();
 
         String title = "ZHANVISUALS";
-        String details = fps + " FPS  |  " + ping + " MS";
+        String fps = mc.getFps() + " FPS";
+        String ping = getPing(mc) + " MS";
 
-        int width = mc.font.width(title) +
-                    mc.font.width(details) + 36;
+        int titleWidth = mc.font.width(title);
+        int fpsWidth = mc.font.width(fps);
+        int pingWidth = mc.font.width(ping);
 
-        g.fill(
+        int width = titleWidth + fpsWidth + pingWidth + 67;
+        int height = 25;
+
+        int x = (screenWidth - width) / 2;
+        int y = 7;
+
+        rounded(
+            g,
             x,
             y,
-            x + width,
-            y + 27,
+            width,
+            height,
+            9,
             PANEL
         );
 
+        // Border and purple accent
         g.fill(
-            x,
-            y,
-            x + 3,
-            y + 27,
+            x + 9,
+            y + 5,
+            x + 11,
+            y + 20,
+            PURPLE
+        );
+
+        // Small logo pulse
+        g.fill(
+            x + 16,
+            y + 11,
+            x + 19,
+            y + 14,
+            PURPLE
+        );
+
+        g.fill(
+            x + 20,
+            y + 8,
+            x + 22,
+            y + 17,
+            PURPLE
+        );
+
+        g.fill(
+            x + 23,
+            y + 11,
+            x + 26,
+            y + 14,
             PURPLE
         );
 
         g.drawString(
             mc.font,
             title,
-            x + 10,
-            y + 6,
-            LIGHT_PURPLE,
+            x + 32,
+            y + 9,
+            LIGHT,
             false
         );
 
-        int detailsX = x + width - mc.font.width(details) - 9;
+        int separatorX = x + 32 + titleWidth + 9;
+
+        g.fill(
+            separatorX,
+            y + 6,
+            separatorX + 1,
+            y + 19,
+            BORDER
+        );
 
         g.drawString(
             mc.font,
-            details,
-            detailsX,
-            y + 6,
-            MUTED,
+            fps,
+            separatorX + 9,
+            y + 9,
+            PURPLE,
             false
         );
 
+        int pingX = separatorX + 9 + fpsWidth + 9;
+
         g.fill(
-            x + 8,
-            y + 22,
-            x + width - 8,
-            y + 23,
-            0xFF554269
+            pingX - 5,
+            y + 6,
+            pingX - 4,
+            y + 19,
+            BORDER
+        );
+
+        g.drawString(
+            mc.font,
+            ping,
+            pingX + 4,
+            y + 9,
+            MUTED,
+            false
         );
     }
 
-    // FPS / COORDINATES / PING / TOTEMS
+    // STATS
     private static void renderStats(
         Minecraft mc,
         GuiGraphics g
     ) {
-        int x = 8;
-        int y = ZhanVisuals.watermark ? 41 : 8;
-        int lineHeight = 13;
-
         int count = 0;
 
         if (ZhanVisuals.fpsCounter) count++;
@@ -133,34 +218,36 @@ public class ZhanHud {
 
         if (count == 0) return;
 
-        int height = 8 + count * lineHeight;
+        int x = 8;
+        int y = ZhanVisuals.watermark ? 39 : 8;
+        int lineHeight = 13;
+        int height = 10 + count * lineHeight;
 
-        g.fill(
+        rounded(
+            g,
             x,
             y,
-            x + 145,
-            y + height,
+            151,
+            height,
+            7,
             PANEL
         );
 
         g.fill(
-            x,
-            y,
-            x + 2,
-            y + height,
-            0xFF8752C9
+            x + 7,
+            y + 7,
+            x + 9,
+            y + height - 7,
+            PURPLE
         );
 
-        int textY = y + 5;
+        int textY = y + 7;
 
         if (ZhanVisuals.fpsCounter) {
             drawStat(
-                g,
-                mc,
-                "FPS",
+                mc, g, "FPS",
                 String.valueOf(mc.getFps()),
-                x + 9,
-                textY
+                x + 15, textY
             );
             textY += lineHeight;
         }
@@ -175,43 +262,34 @@ public class ZhanHud {
             );
 
             drawStat(
-                g,
-                mc,
-                "XYZ",
+                mc, g, "XYZ",
                 coords,
-                x + 9,
-                textY
+                x + 15, textY
             );
             textY += lineHeight;
         }
 
         if (ZhanVisuals.pingDisplay) {
             drawStat(
-                g,
-                mc,
-                "PING",
+                mc, g, "PING",
                 getPing(mc) + " ms",
-                x + 9,
-                textY
+                x + 15, textY
             );
             textY += lineHeight;
         }
 
         if (ZhanVisuals.totemCounter) {
             drawStat(
-                g,
-                mc,
-                "TOTEMS",
+                mc, g, "TOTEMS",
                 String.valueOf(getTotems(mc)),
-                x + 9,
-                textY
+                x + 15, textY
             );
         }
     }
 
     private static void drawStat(
-        GuiGraphics g,
         Minecraft mc,
+        GuiGraphics g,
         String label,
         String value,
         int x,
@@ -229,9 +307,9 @@ public class ZhanHud {
         g.drawString(
             mc.font,
             value,
-            x + 48,
+            x + 49,
             y,
-            0xFFF4F0FA,
+            LIGHT,
             false
         );
     }
@@ -286,11 +364,13 @@ public class ZhanHud {
         int startX = screenWidth / 2 - 42;
         int y = mc.getWindow().getGuiScaledHeight() - 48;
 
-        g.fill(
-            startX - 5,
-            y - 4,
-            startX + 91,
-            y + 24,
+        rounded(
+            g,
+            startX - 7,
+            y - 5,
+            100,
+            29,
+            7,
             PANEL
         );
 
@@ -307,7 +387,7 @@ public class ZhanHud {
         }
     }
 
-    // CUSTOM CROSSHAIR + HIT COLOR
+    // CROSSHAIR
     private static void renderCrosshair(
         Minecraft mc,
         GuiGraphics g
@@ -326,8 +406,8 @@ public class ZhanHud {
 
         int color =
             ZhanVisuals.hitColor && target
-                ? 0xFFFF526D
-                : LIGHT_PURPLE;
+                ? 0xFFFF587C
+                : PURPLE;
 
         int cx = mc.getWindow().getGuiScaledWidth() / 2;
         int cy = mc.getWindow().getGuiScaledHeight() / 2;
@@ -359,45 +439,71 @@ public class ZhanHud {
         int screenWidth = mc.getWindow().getGuiScaledWidth();
         int screenHeight = mc.getWindow().getGuiScaledHeight();
 
-        int width = 150;
-        int height = 48;
+        int width = 164;
+        int height = 57;
 
         int x = Math.min(
-            screenWidth - width - 6,
-            screenWidth / 2 + 18
+            screenWidth - width - 8,
+            screenWidth / 2 + 23
         );
 
         int y = Math.min(
-            screenHeight - height - 6,
-            screenHeight / 2 + 18
+            screenHeight - height - 8,
+            screenHeight / 2 + 20
         );
 
         float health = living.getHealth();
         float maxHealth = Math.max(1.0F, living.getMaxHealth());
-        float ratio = Math.max(0.0F, Math.min(1.0F, health / maxHealth));
+        float ratio = Math.max(
+            0.0F,
+            Math.min(1.0F, health / maxHealth)
+        );
 
-        g.fill(
+        // Main panel
+        rounded(
+            g,
             x,
             y,
-            x + width,
-            y + height,
+            width,
+            height,
+            8,
             PANEL
         );
 
+        // Border accent
         g.fill(
-            x,
-            y,
-            x + 3,
-            y + height,
+            x + 8,
+            y + 7,
+            x + width - 8,
+            y + 8,
+            BORDER
+        );
+
+        g.fill(
+            x + 9,
+            y + 9,
+            x + 11,
+            y + 43,
             PURPLE
+        );
+
+        // Entity marker
+        rounded(
+            g,
+            x + 17,
+            y + 14,
+            25,
+            25,
+            6,
+            0xFF30243F
         );
 
         g.drawString(
             mc.font,
             living.getName(),
-            x + 10,
-            y + 7,
-            LIGHT_PURPLE,
+            x + 49,
+            y + 14,
+            LIGHT,
             false
         );
 
@@ -411,31 +517,38 @@ public class ZhanHud {
         g.drawString(
             mc.font,
             hp,
-            x + 10,
-            y + 21,
-            0xFFF0EAF8,
+            x + 49,
+            y + 28,
+            MUTED,
             false
         );
 
-        int barX = x + 10;
-        int barY = y + 36;
-        int barWidth = width - 20;
+        // Health bar
+        int barX = x + 17;
+        int barY = y + 45;
+        int barWidth = width - 34;
 
-        g.fill(
+        rounded(
+            g,
             barX,
             barY,
-            barX + barWidth,
-            barY + 5,
-            0xFF42394D
+            barWidth,
+            5,
+            3,
+            0xFF393342
         );
 
-        g.fill(
-            barX,
-            barY,
-            barX + (int)(barWidth * ratio),
-            barY + 5,
-            PURPLE
-        );
+        if (ratio > 0) {
+            rounded(
+                g,
+                barX,
+                barY,
+                Math.max(3, (int)(barWidth * ratio)),
+                5,
+                3,
+                PURPLE
+            );
+        }
     }
 
     // KEYSTROKES
@@ -476,24 +589,22 @@ public class ZhanHud {
         String text,
         boolean pressed
     ) {
-        int background = pressed
-            ? 0xFF7040A8
-            : PANEL;
-
-        g.fill(
+        rounded(
+            g,
             x,
             y,
-            x + width,
-            y + 20,
-            background
+            width,
+            20,
+            5,
+            pressed ? 0xFF7045A8 : PANEL
         );
 
         g.fill(
-            x,
+            x + 5,
+            y + 17,
+            x + width - 5,
             y + 18,
-            x + width,
-            y + 20,
-            pressed ? PURPLE : 0xFF51445F
+            pressed ? PURPLE : BORDER
         );
 
         int textWidth = mc.font.width(text);
@@ -503,7 +614,7 @@ public class ZhanHud {
             text,
             x + (width - textWidth) / 2,
             y + 6,
-            0xFFFFFFFF,
+            LIGHT,
             false
         );
     }
