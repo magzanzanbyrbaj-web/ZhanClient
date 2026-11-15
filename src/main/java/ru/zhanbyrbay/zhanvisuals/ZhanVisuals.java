@@ -25,6 +25,7 @@ public class ZhanVisuals implements ClientModInitializer {
     private static KeyMapping openMenuKey;
     private static KeyMapping zoomKey;
     private static KeyMapping autoSwapKey;
+    private static KeyMapping hudEditorKey;
 
     public static boolean hitColor = true;
     public static boolean customCrosshair = true;
@@ -98,13 +99,28 @@ public class ZhanVisuals implements ClientModInitializer {
             )
         );
 
+        hudEditorKey = KeyBindingHelper.registerKeyBinding(
+            new KeyMapping(
+                "key.zhanvisuals.hud_editor",
+                GLFW.GLFW_KEY_H,
+                KeyMapping.Category.MISC
+            )
+        );
+
         loadSettings();
+        HudConfig.load();
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
 
             while (openMenuKey.consumeClick()) {
                 if (client.player != null) {
                     client.setScreen(new ZhanClickScreen());
+                }
+            }
+
+            while (hudEditorKey.consumeClick()) {
+                if (client.player != null) {
+                    client.setScreen(new HudEditorScreen());
                 }
             }
 
@@ -130,24 +146,20 @@ public class ZhanVisuals implements ClientModInitializer {
         if (mc.player == null || mc.gameMode == null) return;
 
         ItemStack offhand = mc.player.getOffhandItem();
-
         String offhandId = getItemId(offhand);
 
         String wantedId;
 
         if (offhandId.equals(autoSwapItemA)) {
             wantedId = autoSwapItemB;
-        } else if (offhandId.equals(autoSwapItemB)) {
-            wantedId = autoSwapItemA;
         } else {
             wantedId = autoSwapItemA;
         }
 
-        Item wantedItem = BuiltInRegistries.ITEM.get(
-            ResourceLocation.tryParse(wantedId)
-        );
+        ResourceLocation id = ResourceLocation.tryParse(wantedId);
+        if (id == null) return;
 
-        if (wantedItem == null) return;
+        Item wantedItem = BuiltInRegistries.ITEM.get(id);
 
         for (int slot = 0; slot < 36; slot++) {
             ItemStack stack = mc.player.getInventory().getItem(slot);
@@ -156,13 +168,7 @@ public class ZhanVisuals implements ClientModInitializer {
                 continue;
             }
 
-            int menuSlot;
-
-            if (slot < 9) {
-                menuSlot = slot + 36;
-            } else {
-                menuSlot = slot;
-            }
+            int menuSlot = slot < 9 ? slot + 36 : slot;
 
             mc.gameMode.handleInventoryMouseClick(
                 mc.player.inventoryMenu.containerId,
@@ -327,7 +333,6 @@ public class ZhanVisuals implements ClientModInitializer {
             case "CustomCrosshair" -> customCrosshair;
             case "Fullbright" -> fullbright;
             case "Low Fire" -> lowFire;
-
             case "Watermark" -> watermark;
             case "FPS Counter" -> fpsCounter;
             case "Coordinates" -> coordinates;
@@ -337,17 +342,14 @@ public class ZhanVisuals implements ClientModInitializer {
             case "Target HUD" -> targetHUD;
             case "Keystrokes" -> keystrokes;
             case "Speedometer" -> speedometer;
-
             case "Zoom" -> zoom;
             case "AutoSprint" -> autoSprint;
-
             case "No Particles" -> noParticles;
             case "No Weather" -> noWeather;
             case "No Pumpkin" -> noPumpkin;
             case "NoBossBar" -> noBossBar;
             case "No Hurt Camera" -> noHurtCamera;
             case "No Fluid" -> noFluid;
-
             case "Performance Boost" -> optimized;
             case "AutoSwap" -> autoSwap;
             default -> false;
@@ -360,7 +362,6 @@ public class ZhanVisuals implements ClientModInitializer {
             case "CustomCrosshair" -> customCrosshair = !customCrosshair;
             case "Fullbright" -> toggleFullbright();
             case "Low Fire" -> lowFire = !lowFire;
-
             case "Watermark" -> watermark = !watermark;
             case "FPS Counter" -> fpsCounter = !fpsCounter;
             case "Coordinates" -> coordinates = !coordinates;
@@ -370,21 +371,17 @@ public class ZhanVisuals implements ClientModInitializer {
             case "Target HUD" -> targetHUD = !targetHUD;
             case "Keystrokes" -> keystrokes = !keystrokes;
             case "Speedometer" -> speedometer = !speedometer;
-
             case "Zoom" -> {
                 zoom = !zoom;
                 if (!zoom) restoreZoom(Minecraft.getInstance());
             }
-
             case "AutoSprint" -> autoSprint = !autoSprint;
-
             case "No Particles" -> noParticles = !noParticles;
             case "No Weather" -> noWeather = !noWeather;
             case "No Pumpkin" -> noPumpkin = !noPumpkin;
             case "NoBossBar" -> noBossBar = !noBossBar;
             case "No Hurt Camera" -> noHurtCamera = !noHurtCamera;
             case "No Fluid" -> noFluid = !noFluid;
-
             case "Performance Boost" -> toggleOptimization();
             case "AutoSwap" -> autoSwap = !autoSwap;
         }
