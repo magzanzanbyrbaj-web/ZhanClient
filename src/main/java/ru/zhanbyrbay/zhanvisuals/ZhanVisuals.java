@@ -6,18 +6,22 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
 public class ZhanVisuals implements ClientModInitializer {
 
     public static final String MOD_ID = "zhanvisuals";
+
     private static KeyMapping openMenuKey;
 
+    // VISUALS
     public static boolean hitColor = true;
     public static boolean customCrosshair = true;
     public static boolean fullbright = false;
+    public static boolean lowFire = false;
 
+    // HUD
+    public static boolean watermark = true;
     public static boolean fpsCounter = true;
     public static boolean coordinates = true;
     public static boolean armorHUD = true;
@@ -26,21 +30,24 @@ public class ZhanVisuals implements ClientModInitializer {
     public static boolean targetHUD = true;
     public static boolean keystrokes = true;
 
-    public static boolean lowFire = false;
+    // NO RENDER
     public static boolean noParticles = false;
     public static boolean noWeather = false;
     public static boolean noPumpkin = false;
     public static boolean noBossBar = false;
     public static boolean noHurtCamera = false;
+    public static boolean noFluid = false;
 
+    // OTHER
     public static boolean optimized = false;
 
-    private static double previousGamma;
-    private static int previousRenderDistance;
-    private static int previousSimulationDistance;
+    private static double previousGamma = 1.0;
+    private static int previousRenderDistance = 12;
+    private static int previousSimulationDistance = 8;
 
     @Override
     public void onInitializeClient() {
+
         openMenuKey = KeyBindingHelper.registerKeyBinding(
             new KeyMapping(
                 "key.zhanvisuals.open_menu",
@@ -58,11 +65,8 @@ public class ZhanVisuals implements ClientModInitializer {
         });
 
         ZhanHud.register();
-        System.out.println("[ZhanVisuals] 3.1 loaded");
-    }
 
-    public static Identifier id(String path) {
-        return Identifier.fromNamespaceAndPath(MOD_ID, path);
+        System.out.println("[ZhanVisuals] Premium initialized");
     }
 
     public static boolean isEnabled(String name) {
@@ -70,7 +74,9 @@ public class ZhanVisuals implements ClientModInitializer {
             case "HitColor" -> hitColor;
             case "CustomCrosshair" -> customCrosshair;
             case "Fullbright" -> fullbright;
+            case "Low Fire" -> lowFire;
 
+            case "Watermark" -> watermark;
             case "FPS Counter" -> fpsCounter;
             case "Coordinates" -> coordinates;
             case "Armor HUD" -> armorHUD;
@@ -79,12 +85,12 @@ public class ZhanVisuals implements ClientModInitializer {
             case "Target HUD" -> targetHUD;
             case "Keystrokes" -> keystrokes;
 
-            case "Low Fire" -> lowFire;
             case "No Particles" -> noParticles;
             case "No Weather" -> noWeather;
             case "No Pumpkin" -> noPumpkin;
-            case "No Boss Bar" -> noBossBar;
+            case "No BossBar" -> noBossBar;
             case "No Hurt Camera" -> noHurtCamera;
+            case "No Fluid" -> noFluid;
 
             case "Performance Boost" -> optimized;
             default -> false;
@@ -96,7 +102,9 @@ public class ZhanVisuals implements ClientModInitializer {
             case "HitColor" -> hitColor = !hitColor;
             case "CustomCrosshair" -> customCrosshair = !customCrosshair;
             case "Fullbright" -> toggleFullbright();
+            case "Low Fire" -> lowFire = !lowFire;
 
+            case "Watermark" -> watermark = !watermark;
             case "FPS Counter" -> fpsCounter = !fpsCounter;
             case "Coordinates" -> coordinates = !coordinates;
             case "Armor HUD" -> armorHUD = !armorHUD;
@@ -105,51 +113,50 @@ public class ZhanVisuals implements ClientModInitializer {
             case "Target HUD" -> targetHUD = !targetHUD;
             case "Keystrokes" -> keystrokes = !keystrokes;
 
-            case "Low Fire" -> lowFire = !lowFire;
             case "No Particles" -> noParticles = !noParticles;
             case "No Weather" -> noWeather = !noWeather;
             case "No Pumpkin" -> noPumpkin = !noPumpkin;
-            case "No Boss Bar" -> noBossBar = !noBossBar;
+            case "No BossBar" -> noBossBar = !noBossBar;
             case "No Hurt Camera" -> noHurtCamera = !noHurtCamera;
+            case "No Fluid" -> noFluid = !noFluid;
 
             case "Performance Boost" -> toggleOptimization();
         }
     }
 
     private static void toggleFullbright() {
-        Minecraft client = Minecraft.getInstance();
+        Minecraft mc = Minecraft.getInstance();
 
         if (!fullbright) {
-            previousGamma = client.options.gamma().get();
-            client.options.gamma().set(1.0);
+            previousGamma = mc.options.gamma().get();
+            mc.options.gamma().set(1.0);
             fullbright = true;
         } else {
-            client.options.gamma().set(previousGamma);
+            mc.options.gamma().set(previousGamma);
             fullbright = false;
         }
     }
 
-    public static void toggleOptimization() {
-        Minecraft client = Minecraft.getInstance();
-
-        if (client.level == null) return;
+    private static void toggleOptimization() {
+        Minecraft mc = Minecraft.getInstance();
 
         if (!optimized) {
-            previousRenderDistance = client.options.renderDistance().get();
-            previousSimulationDistance = client.options.simulationDistance().get();
+            previousRenderDistance = mc.options.renderDistance().get();
+            previousSimulationDistance = mc.options.simulationDistance().get();
 
-            client.options.renderDistance().set(
+            mc.options.renderDistance().set(
                 Math.min(previousRenderDistance, 6)
             );
 
-            client.options.simulationDistance().set(
+            mc.options.simulationDistance().set(
                 Math.min(previousSimulationDistance, 4)
             );
 
             optimized = true;
         } else {
-            client.options.renderDistance().set(previousRenderDistance);
-            client.options.simulationDistance().set(previousSimulationDistance);
+            mc.options.renderDistance().set(previousRenderDistance);
+            mc.options.simulationDistance().set(previousSimulationDistance);
+
             optimized = false;
         }
     }
