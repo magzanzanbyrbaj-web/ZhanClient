@@ -13,6 +13,7 @@ public class ZhanVisuals implements ClientModInitializer {
     public static final String MOD_ID = "zhanvisuals";
 
     private static KeyMapping openMenuKey;
+    private static KeyMapping zoomKey;
 
     // VISUALS
     public static boolean hitColor = true;
@@ -29,6 +30,11 @@ public class ZhanVisuals implements ClientModInitializer {
     public static boolean pingDisplay = true;
     public static boolean targetHUD = true;
     public static boolean keystrokes = true;
+    public static boolean speedometer = true;
+
+    // MOVEMENT
+    public static boolean zoom = false;
+    public static boolean autoSprint = false;
 
     // NO RENDER
     public static boolean noParticles = false;
@@ -41,9 +47,17 @@ public class ZhanVisuals implements ClientModInitializer {
     // OTHER
     public static boolean optimized = false;
 
+    public static double currentSpeed = 0.0;
+
     private static double previousGamma = 1.0;
+    private static int previousFov = 70;
     private static int previousRenderDistance = 12;
     private static int previousSimulationDistance = 8;
+
+    private static boolean zooming = false;
+    private static double lastX;
+    private static double lastZ;
+    private static boolean hasLastPosition = false;
 
     @Override
     public void onInitializeClient() {
@@ -56,17 +70,92 @@ public class ZhanVisuals implements ClientModInitializer {
             )
         );
 
+        zoomKey = KeyBindingHelper.registerKeyBinding(
+            new KeyMapping(
+                "key.zhanvisuals.zoom",
+                GLFW.GLFW_KEY_C,
+                KeyMapping.Category.MISC
+            )
+        );
+
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+
             while (openMenuKey.consumeClick()) {
                 if (client.player != null) {
                     client.setScreen(new ZhanClickScreen());
                 }
             }
+
+            updateZoom(client);
+            updateMovement(client);
+            updateSpeed(client);
         });
 
         ZhanHud.register();
 
-        System.out.println("[ZhanVisuals] Premium initialized");
+        System.out.println("[ZhanVisuals] Initialized");
+    }
+
+    private static void updateZoom(Minecraft mc) {
+        if (mc.player == null) {
+            restoreZoom(mc);
+            return;
+        }
+
+        boolean shouldZoom = zoom && zoomKey.isDown();
+
+        if (shouldZoom && !zooming) {
+            previousFov = mc.options.fov().get();
+            zooming = true;
+        }
+
+        if (shouldZoom) {
+            mc.options.fov().set(30);
+        } else if (zooming) {
+            restoreZoom(mc);
+        }
+    }
+
+    private static void restoreZoom(Minecraft mc) {
+        if (zooming) {
+            mc.options.fov().set(previousFov);
+            zooming = false;
+        }
+    }
+
+    private static void updateMovement(Minecraft mc) {
+        if (mc.player == null) return;
+
+        if (autoSprint) {
+            boolean movingForward = mc.options.keyUp.isDown();
+            boolean sneaking = mc.options.keyShift.isDown();
+
+            if (movingForward && !sneaking && !mc.player.isPassenger()) {
+                mc.player.setSprinting(true);
+            }
+        }
+    }
+
+    private static void updateSpeed(Minecraft mc) {
+        if (mc.player == null) {
+            hasLastPosition = false;
+            currentSpeed = 0;
+            return;
+        }
+
+        double x = mc.player.getX();
+        double z = mc.player.getZ();
+
+        if (hasLastPosition) {
+            double dx = x - lastX;
+            double dz = z - lastZ;
+
+            currentSpeed = Math.sqrt(dx * dx + dz * dz) * 20.0;
+        }
+
+        lastX = x;
+        lastZ = z;
+        hasLastPosition = true;
     }
 
     public static boolean isEnabled(String name) {
@@ -84,11 +173,15 @@ public class ZhanVisuals implements ClientModInitializer {
             case "Ping Display" -> pingDisplay;
             case "Target HUD" -> targetHUD;
             case "Keystrokes" -> keystrokes;
+            case "Speedometer" -> speedometer;
+
+            case "Zoom" -> zoom;
+            case "AutoSprint" -> autoSprint;
 
             case "No Particles" -> noParticles;
             case "No Weather" -> noWeather;
             case "No Pumpkin" -> noPumpkin;
-            case "No BossBar" -> noBossBar;
+            case "NoBossBar" -> noBossBar;
             case "No Hurt Camera" -> noHurtCamera;
             case "No Fluid" -> noFluid;
 
@@ -112,11 +205,19 @@ public class ZhanVisuals implements ClientModInitializer {
             case "Ping Display" -> pingDisplay = !pingDisplay;
             case "Target HUD" -> targetHUD = !targetHUD;
             case "Keystrokes" -> keystrokes = !keystrokes;
+            case "Speedometer" -> speedometer = !speedometer;
+
+            case "Zoom" -> {
+                zoom = !zoom;
+                if (!zoom) restoreZoom(Minecraft.getInstance());
+            }
+
+            case "AutoSprint" -> autoSprint = !autoSprint;
 
             case "No Particles" -> noParticles = !noParticles;
             case "No Weather" -> noWeather = !noWeather;
             case "No Pumpkin" -> noPumpkin = !noPumpkin;
-            case "No BossBar" -> noBossBar = !noBossBar;
+            case "NoBossBar" -> noBossBar = !noBossBar;
             case "No Hurt Camera" -> noHurtCamera = !noHurtCamera;
             case "No Fluid" -> noFluid = !noFluid;
 
@@ -129,7 +230,7 @@ public class ZhanVisuals implements ClientModInitializer {
 
         if (!fullbright) {
             previousGamma = mc.options.gamma().get();
-            mc.options.gamma().set(1.0);
+            mc.options.gamma().set(16.0);
             fullbright = true;
         } else {
             mc.options.gamma().set(previousGamma);
