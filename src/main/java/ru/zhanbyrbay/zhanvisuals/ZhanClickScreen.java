@@ -11,7 +11,8 @@ public class ZhanClickScreen extends Screen {
     private static final String[] CATEGORIES = {
         "Visuals",
         "HUD",
-        "Settings"
+        "NoRender",
+        "Performance"
     };
 
     private static final String[][] MODULES = {
@@ -24,7 +25,18 @@ public class ZhanClickScreen extends Screen {
             "FPS Counter",
             "Coordinates",
             "Armor HUD",
-            "Totem Counter"
+            "Totem Counter",
+            "Ping Display",
+            "Target HUD",
+            "Keystrokes"
+        },
+        {
+            "Low Fire",
+            "No Particles",
+            "No Weather",
+            "No Pumpkin",
+            "No Boss Bar",
+            "No Hurt Camera"
         },
         {
             "Performance Boost"
@@ -32,12 +44,34 @@ public class ZhanClickScreen extends Screen {
     };
 
     private int selectedCategory = 0;
-
     private int panelX;
     private int panelY;
+    private int panelW;
+    private int panelH;
 
     public ZhanClickScreen() {
-        super(Component.literal("ZhanVisuals 3.0"));
+        super(Component.literal("ZhanVisuals 3.1"));
+    }
+
+    private void drawText(
+        GuiGraphics g,
+        String text,
+        int x,
+        int y,
+        int color
+    ) {
+        Component component = Component.literal(text)
+            .withStyle(style -> style.withFont(ZhanVisuals.id("ui")));
+
+        g.drawString(font, component, x, y, color, false);
+    }
+
+    private void calculatePanel() {
+        panelW = Math.min(650, width - 20);
+        panelH = Math.min(320, height - 20);
+
+        panelX = (width - panelW) / 2;
+        panelY = (height - panelH) / 2;
     }
 
     @Override
@@ -47,159 +81,114 @@ public class ZhanClickScreen extends Screen {
         int mouseY,
         float delta
     ) {
-
-        // Background without blur
-        g.fill(
-            0, 0, width, height,
-            0x9905080D
-        );
-
-        int w = Math.min(600, width - 24);
-        int h = Math.min(310, height - 24);
-
-        panelX = (width - w) / 2;
-        panelY = (height - h) / 2;
+        calculatePanel();
 
         int x = panelX;
         int y = panelY;
+        int w = panelW;
+        int h = panelH;
 
-        // Main panel
-        g.fill(
-            x, y,
-            x + w, y + h,
-            0xF20C0E14
-        );
+        // Background
+        g.fill(0, 0, width, height, 0xB8000000);
 
-        // Red line
-        g.fill(
-            x, y,
-            x + w, y + 3,
-            0xFFFF3030
-        );
+        // Main window
+        g.fill(x, y, x + w, y + h, 0xFF0D1018);
+
+        // Top red accent
+        g.fill(x, y, x + w, y + 3, 0xFFFF3548);
 
         // Sidebar
-        g.fill(
-            x, y + 3,
-            x + 135, y + h,
-            0xFF11141C
-        );
+        g.fill(x, y + 3, x + 125, y + h, 0xFF11151F);
 
         // Logo
-        g.drawString(
-            font,
-            "ZHANVISUALS",
-            x + 15, y + 17,
-            0xFFFF414D,
-            false
-        );
+        drawText(g, "ZHAN", x + 15, y + 15, 0xFFFF4558);
+        drawText(g, "VISUALS", x + 48, y + 15, 0xFFFFFFFF);
+        drawText(g, "3.1", x + 15, y + 31, 0xFF777F91);
 
-        g.drawString(
-            font,
-            "3.0",
-            x + 105, y + 17,
-            0xFF777D8B,
-            false
-        );
-
-        g.fill(
-            x + 14, y + 37,
-            x + 120, y + 38,
-            0xFF292D38
-        );
+        g.fill(x + 12, y + 48, x + 112, y + 49, 0xFF292E3B);
 
         // Categories
         for (int i = 0; i < CATEGORIES.length; i++) {
-
-            int cy = y + 55 + i * 38;
+            int cy = y + 64 + i * 38;
 
             boolean selected = selectedCategory == i;
-
             boolean hovered =
-                mouseX >= x + 9 &&
-                mouseX <= x + 126 &&
-                mouseY >= cy - 9 &&
+                mouseX >= x + 8 &&
+                mouseX <= x + 117 &&
+                mouseY >= cy - 8 &&
                 mouseY <= cy + 20;
 
             if (selected) {
-
                 g.fill(
-                    x + 9, cy - 9,
-                    x + 126, cy + 20,
+                    x + 8, cy - 8,
+                    x + 117, cy + 20,
                     0xFF29202A
                 );
 
                 g.fill(
-                    x + 9, cy - 9,
-                    x + 12, cy + 20,
+                    x + 8, cy - 8,
+                    x + 11, cy + 20,
                     0xFFFF3548
                 );
-
             } else if (hovered) {
-
                 g.fill(
-                    x + 9, cy - 9,
-                    x + 126, cy + 20,
-                    0xFF1B1E28
+                    x + 8, cy - 8,
+                    x + 117, cy + 20,
+                    0xFF202530
                 );
             }
 
-            g.drawString(
-                font,
+            drawText(
+                g,
                 CATEGORIES[i],
-                x + 21,
+                x + 20,
                 cy,
-                selected ? 0xFFFF5967 : 0xFFB5B8C3,
-                false
+                selected ? 0xFFFF6876 : 0xFFB7BDCA
             );
         }
 
-        // Footer
-        g.drawString(
-            font,
+        drawText(
+            g,
             "Zhanbyrbay",
-            x + 15,
-            y + h - 23,
-            0xFF777D8B,
-            false
+            x + 14,
+            y + h - 21,
+            0xFF747D8F
         );
 
-        // Content title
-        int contentX = x + 155;
+        // Content
+        int contentX = x + 143;
 
-        g.drawString(
-            font,
+        drawText(
+            g,
             CATEGORIES[selectedCategory].toUpperCase(),
             contentX,
-            y + 20,
-            0xFFFFFFFF,
-            false
+            y + 17,
+            0xFFFFFFFF
         );
 
-        g.drawString(
-            font,
+        drawText(
+            g,
             "Customize your experience",
             contentX,
-            y + 37,
-            0xFF858B99,
-            false
+            y + 33,
+            0xFF858D9E
         );
 
-        // Module cards
         String[] modules = MODULES[selectedCategory];
 
-        int cardW = Math.min(190, (w - 190) / 2);
-        int cardH = 53;
+        int cardW = Math.min(220, (w - 175) / 2);
+        int cardH = 43;
+        int gapX = 12;
+        int gapY = 10;
 
         for (int i = 0; i < modules.length; i++) {
-
             int col = i % 2;
             int row = i / 2;
 
-            int cx = contentX + col * (cardW + 12);
-            int cy = y + 65 + row * 65;
+            int cx = contentX + col * (cardW + gapX);
+            int cy = y + 53 + row * (cardH + gapY);
 
-            boolean active =
-                ZhanVisuals.isEnabled(modules[i]);
+            boolean active = ZhanVisuals.isEnabled(modules[i]);
 
             boolean hovered =
                 mouseX >= cx &&
@@ -211,61 +200,57 @@ public class ZhanClickScreen extends Screen {
             g.fill(
                 cx, cy,
                 cx + cardW, cy + cardH,
-                hovered ? 0xFF242936 : 0xFF191D27
+                hovered ? 0xFF252B38 : 0xFF191E29
             );
 
             // Accent
             g.fill(
                 cx, cy,
                 cx + 2, cy + cardH,
-                active ? 0xFFFF3548 : 0xFF343946
+                active ? 0xFFFF3548 : 0xFF343B49
             );
 
-            // Module name
-            g.drawString(
-                font,
+            drawText(
+                g,
                 modules[i],
-                cx + 12,
-                cy + 12,
-                0xFFE8EAF0,
-                false
+                cx + 10,
+                cy + 8,
+                0xFFE9EBF2
+            );
+
+            drawText(
+                g,
+                active ? "ENABLED" : "DISABLED",
+                cx + 10,
+                cy + 25,
+                active ? 0xFFFF6574 : 0xFF777F90
             );
 
             // Toggle
             int tx = cx + cardW - 37;
-            int ty = cy + 31;
+            int ty = cy + 15;
 
             g.fill(
                 tx, ty,
-                tx + 25, ty + 12,
-                active ? 0xFFB82D42 : 0xFF343946
+                tx + 25, ty + 13,
+                active ? 0xFFB92D42 : 0xFF343B49
             );
 
-            int knobX = active ? tx + 15 : tx + 2;
+            int knobX = active ? tx + 14 : tx + 2;
 
             g.fill(
                 knobX, ty + 2,
-                knobX + 8, ty + 10,
+                knobX + 9, ty + 11,
                 0xFFFFFFFF
-            );
-
-            g.drawString(
-                font,
-                active ? "ON" : "OFF",
-                cx + 12,
-                cy + 32,
-                active ? 0xFFFF6672 : 0xFF777D8B,
-                false
             );
         }
 
-        g.drawString(
-            font,
-            "RIGHT SHIFT / CLOSE",
+        drawText(
+            g,
+            "RIGHT SHIFT  -  CLOSE",
             contentX,
-            y + h - 19,
-            0xFF626977,
-            false
+            y + h - 18,
+            0xFF626C7E
         );
     }
 
@@ -274,28 +259,28 @@ public class ZhanClickScreen extends Screen {
         MouseButtonEvent event,
         boolean doubleClicked
     ) {
-
         if (event.button() != 0) {
             return super.mouseClicked(event, doubleClicked);
         }
 
-        double mouseX = event.x();
-        double mouseY = event.y();
+        calculatePanel();
+
+        double mx = event.x();
+        double my = event.y();
 
         int x = panelX;
         int y = panelY;
-        int w = Math.min(600, width - 24);
+        int w = panelW;
 
         // Category clicks
         for (int i = 0; i < CATEGORIES.length; i++) {
-
-            int cy = y + 55 + i * 38;
+            int cy = y + 64 + i * 38;
 
             if (
-                mouseX >= x + 9 &&
-                mouseX <= x + 126 &&
-                mouseY >= cy - 9 &&
-                mouseY <= cy + 20
+                mx >= x + 8 &&
+                mx <= x + 117 &&
+                my >= cy - 8 &&
+                my <= cy + 20
             ) {
                 selectedCategory = i;
                 return true;
@@ -303,27 +288,27 @@ public class ZhanClickScreen extends Screen {
         }
 
         // Module clicks
-        int contentX = x + 155;
-        int cardW = Math.min(190, (w - 190) / 2);
-        int cardH = 53;
+        int contentX = x + 143;
+        int cardW = Math.min(220, (w - 175) / 2);
+        int cardH = 43;
+        int gapX = 12;
+        int gapY = 10;
 
         String[] modules = MODULES[selectedCategory];
 
         for (int i = 0; i < modules.length; i++) {
-
             int col = i % 2;
             int row = i / 2;
 
-            int cx = contentX + col * (cardW + 12);
-            int cy = y + 65 + row * 65;
+            int cx = contentX + col * (cardW + gapX);
+            int cy = y + 53 + row * (cardH + gapY);
 
             if (
-                mouseX >= cx &&
-                mouseX <= cx + cardW &&
-                mouseY >= cy &&
-                mouseY <= cy + cardH
+                mx >= cx &&
+                mx <= cx + cardW &&
+                my >= cy &&
+                my <= cy + cardH
             ) {
-
                 ZhanVisuals.toggleModule(modules[i]);
                 return true;
             }
