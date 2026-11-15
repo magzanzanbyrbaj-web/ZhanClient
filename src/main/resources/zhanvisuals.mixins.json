@@ -7,8 +7,7 @@
   "refmap": "zhanvisuals.refmap.json",
   "client": [
     "LevelRendererMixin",
-    "GuiMixin",
-    "GameRendererMixin"
+    "GuiMixin"
   ],
   "injectors": {
     "defaultRequire": 1
