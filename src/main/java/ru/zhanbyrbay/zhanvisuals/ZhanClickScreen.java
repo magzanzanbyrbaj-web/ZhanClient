@@ -8,22 +8,17 @@ import net.minecraft.client.input.MouseButtonEvent;
 
 public class ZhanClickScreen extends Screen {
 
-    private String category = "Visuals";
+    private String category = "Визуалы";
 
     private static final int PURPLE = 0xFFAA78FF;
-    private static final int LIGHT = 0xFFF5F0FF;
-    private static final int MUTED = 0xFF92899F;
+    private static final int LIGHT = 0xFFF4EEFF;
+    private static final int MUTED = 0xFFAAA1B8;
     private static final int PANEL = 0xF00D0C12;
-    private static final int CARD = 0xFF17151F;
-    private static final int CARD_HOVER = 0xFF24202F;
-    private static final int BORDER = 0xFF302A3B;
+    private static final int CARD = 0xFF191620;
+    private static final int HOVER = 0xFF292235;
 
     private static final String[] CATEGORIES = {
-        "Visuals", "HUD", "NoRender", "Performance"
-    };
-
-    private static final String[] ICONS = {
-        "V", "H", "N", "P"
+        "Визуалы", "Интерфейс", "NoRender", "Движение", "Оптимизация"
     };
 
     private static final String[][] MODULES = {
@@ -41,7 +36,8 @@ public class ZhanClickScreen extends Screen {
             "Totem Counter",
             "Ping Display",
             "Target HUD",
-            "Keystrokes"
+            "Keystrokes",
+            "Speedometer"
         },
         {
             "No Particles",
@@ -52,7 +48,46 @@ public class ZhanClickScreen extends Screen {
             "No Fluid"
         },
         {
+            "Zoom",
+            "AutoSprint"
+        },
+        {
             "Performance Boost"
+        }
+    };
+
+    private static final String[][] DESCRIPTIONS = {
+        {
+            "Изменяет цвет при наведении на цель.",
+            "Заменяет стандартный прицел на компактный.",
+            "Увеличивает яркость мира.",
+            "Уменьшает видимую часть огня."
+        },
+        {
+            "Показывает название клиента, FPS и ping.",
+            "Отображает текущий FPS.",
+            "Показывает координаты игрока.",
+            "Показывает надетую броню.",
+            "Считает тотемы в инвентаре.",
+            "Показывает задержку соединения.",
+            "Показывает здоровье существа под прицелом.",
+            "Отображает нажатия WASD и кнопок мыши.",
+            "Показывает скорость передвижения."
+        },
+        {
+            "Отключает отображение частиц.",
+            "Отключает отображение погоды.",
+            "Скрывает текстуру тыквы.",
+            "Скрывает боссбар.",
+            "Отключает эффект тряски камеры.",
+            "Отключает визуальные эффекты жидкостей."
+        },
+        {
+            "При удержании C приближает изображение.",
+            "Автоматически включает бег при движении вперёд."
+        },
+        {
+            "Уменьшает дальность прорисовки и симуляции."
         }
     };
 
@@ -61,11 +96,13 @@ public class ZhanClickScreen extends Screen {
     private int panelW;
     private int panelH;
 
-    private int sidebarW = 58;
     private int contentX;
     private int contentY;
+    private int sidebarW = 104;
     private int cardWidth;
     private int startY;
+
+    private String hoveredDescription = "Наведите на модуль, чтобы увидеть описание.";
 
     public ZhanClickScreen() {
         super(Component.literal("ZhanVisuals"));
@@ -73,17 +110,19 @@ public class ZhanClickScreen extends Screen {
 
     @Override
     protected void init() {
-        panelW = Math.min(650, width - 24);
-        panelH = Math.min(370, height - 24);
+        panelW = Math.min(560, width - 24);
+        panelH = Math.min(320, height - 24);
 
         panelX = (width - panelW) / 2;
         panelY = (height - panelH) / 2;
 
-        contentX = panelX + sidebarW + 17;
-        contentY = panelY + 65;
+        sidebarW = Math.max(88, Math.min(104, panelW / 5));
 
-        cardWidth = Math.max(110, (panelW - sidebarW - 48) / 2);
-        startY = contentY + 43;
+        contentX = panelX + sidebarW + 15;
+        contentY = panelY + 59;
+
+        cardWidth = Math.max(100, (panelW - sidebarW - 42) / 2);
+        startY = contentY + 42;
     }
 
     private void rounded(
@@ -112,23 +151,11 @@ public class ZhanClickScreen extends Screen {
                 );
             }
 
-            g.fill(
-                x + inset,
-                y + row,
-                x + w - inset,
-                y + row + 1,
-                color
-            );
+            g.fill(x + inset, y + row, x + w - inset, y + row + 1, color);
         }
     }
 
-    private void drawText(
-        GuiGraphics g,
-        String text,
-        int x,
-        int y,
-        int color
-    ) {
+    private void draw(String text, GuiGraphics g, int x, int y, int color) {
         g.drawString(font, text, x, y, color, false);
     }
 
@@ -141,300 +168,161 @@ public class ZhanClickScreen extends Screen {
     ) {
         g.fill(0, 0, width, height, 0x9906050C);
 
-        // Main window
         rounded(
-            g,
-            panelX - 1,
-            panelY - 1,
-            panelW + 2,
-            panelH + 2,
-            10,
-            0xFF40334F
+            g, panelX - 1, panelY - 1,
+            panelW + 2, panelH + 2, 10, 0xFF49375D
         );
 
         rounded(
-            g,
-            panelX,
-            panelY,
-            panelW,
-            panelH,
-            10,
-            PANEL
+            g, panelX, panelY,
+            panelW, panelH, 10, PANEL
         );
 
         // Header
         rounded(
-            g,
-            panelX + 1,
-            panelY + 1,
-            panelW - 2,
-            48,
-            9,
-            0xFF111019
+            g, panelX + 1, panelY + 1,
+            panelW - 2, 43, 9, 0xFF14111C
         );
-
-        g.fill(
-            panelX + 12,
-            panelY + 48,
-            panelX + panelW - 12,
-            panelY + 49,
-            0xFF292333
-        );
-
-        // Logo
-        rounded(
-            g,
-            panelX + 15,
-            panelY + 13,
-            24,
-            24,
-            7,
-            0xFF38234F
-        );
-
-        drawText(
-            g,
-            "Z",
-            panelX + 23,
-            panelY + 21,
-            PURPLE
-        );
-
-        drawText(
-            g,
-            "ZHANVISUALS",
-            panelX + 47,
-            panelY + 13,
-            LIGHT
-        );
-
-        drawText(
-            g,
-            "CLIENT  /  1.21.11",
-            panelX + 47,
-            panelY + 28,
-            MUTED
-        );
-
-        // Search-like header decoration
-        int searchW = Math.min(135, panelW / 3);
-        int searchX = panelX + panelW - searchW - 15;
 
         rounded(
-            g,
-            searchX,
-            panelY + 13,
-            searchW,
-            25,
-            8,
-            0xFF1B1824
+            g, panelX + 13, panelY + 10,
+            23, 23, 7, 0xFF39234F
         );
 
-        drawText(
+        draw("Z", g, panelX + 21, panelY + 18, PURPLE);
+        draw("ZHANVISUALS", g, panelX + 44, panelY + 10, LIGHT);
+        draw("КЛИЕНТ  /  1.21.11", g, panelX + 44, panelY + 25, MUTED);
+
+        String version = "PREMIUM";
+        draw(
+            version,
             g,
-            "⌕",
-            searchX + 9,
-            panelY + 20,
+            panelX + panelW - font.width(version) - 15,
+            panelY + 19,
             PURPLE
-        );
-
-        drawText(
-            g,
-            "Modules",
-            searchX + 25,
-            panelY + 21,
-            MUTED
         );
 
         // Sidebar
         rounded(
-            g,
-            panelX + 9,
-            panelY + 59,
-            40,
-            panelH - 70,
-            8,
-            0xFF121019
+            g, panelX + 8, panelY + 51,
+            sidebarW - 13, panelH - 60, 8, 0xFF121019
         );
 
         for (int i = 0; i < CATEGORIES.length; i++) {
-            int y = panelY + 72 + i * 45;
+            int y = panelY + 61 + i * 37;
             boolean selected = category.equals(CATEGORIES[i]);
 
             if (selected) {
                 rounded(
-                    g,
-                    panelX + 13,
-                    y,
-                    32,
-                    32,
-                    8,
-                    0xFF39264F
+                    g, panelX + 12, y,
+                    sidebarW - 21, 29, 6, 0xFF352440
                 );
 
-                rounded(
-                    g,
-                    panelX + 13,
-                    y + 5,
-                    3,
-                    22,
-                    2,
+                g.fill(
+                    panelX + 12, y + 5,
+                    panelX + 14, y + 24,
                     PURPLE
                 );
             }
 
-            String icon = ICONS[i];
-            int color = selected ? LIGHT : MUTED;
-
-            drawText(
+            draw(
+                CATEGORIES[i],
                 g,
-                icon,
-                panelX + 25,
-                y + 12,
-                color
+                panelX + 20,
+                y + 10,
+                selected ? LIGHT : MUTED
             );
         }
 
-        // Sidebar bottom label
-        drawText(
-            g,
-            "Z",
-            panelX + 27,
-            panelY + panelH - 25,
-            PURPLE
-        );
-
-        // Content title
-        drawText(
-            g,
-            category,
-            contentX,
-            contentY,
-            LIGHT
-        );
-
-        drawText(
-            g,
-            "Configure your modules",
-            contentX,
-            contentY + 16,
-            MUTED
-        );
+        // Content heading
+        draw(category, g, contentX, contentY, LIGHT);
+        draw("Настройка модулей клиента", g, contentX, contentY + 15, MUTED);
 
         String[] modules = MODULES[getCategoryIndex()];
+        String[] descriptions = DESCRIPTIONS[getCategoryIndex()];
+
+        hoveredDescription = "Наведите на модуль, чтобы увидеть описание.";
 
         for (int i = 0; i < modules.length; i++) {
             int column = i % 2;
             int row = i / 2;
 
-            int x = contentX + column * (cardWidth + 9);
-            int y = startY + row * 45;
+            int x = contentX + column * (cardWidth + 8);
+            int y = startY + row * 33;
 
-            if (y + 35 > panelY + panelH - 30) {
-                continue;
-            }
+            if (y + 27 > panelY + panelH - 39) continue;
 
             boolean enabled = ZhanVisuals.isEnabled(modules[i]);
 
             boolean hovered =
                 mouseX >= x && mouseX <= x + cardWidth &&
-                mouseY >= y && mouseY <= y + 35;
+                mouseY >= y && mouseY <= y + 27;
+
+            if (hovered) {
+                hoveredDescription = descriptions[i];
+            }
 
             rounded(
-                g,
-                x,
-                y,
-                cardWidth,
-                35,
-                8,
-                hovered ? CARD_HOVER : CARD
+                g, x, y, cardWidth, 27, 6,
+                hovered ? HOVER : CARD
             );
 
-            // Subtle card border
-            g.fill(
-                x + 8,
-                y + 6,
-                x + cardWidth - 8,
-                y + 7,
-                BORDER
-            );
-
-            drawText(
-                g,
+            draw(
                 modules[i],
-                x + 10,
-                y + 14,
+                g,
+                x + 8,
+                y + 10,
                 enabled ? LIGHT : MUTED
             );
 
-            // Toggle
-            int sx = x + cardWidth - 34;
-            int sy = y + 10;
+            int sx = x + cardWidth - 29;
 
             rounded(
-                g,
-                sx,
-                sy,
-                25,
-                15,
-                8,
+                g, sx, y + 7, 21, 13, 7,
                 enabled ? 0xFF7545B5 : 0xFF403B49
             );
 
             rounded(
                 g,
-                enabled ? sx + 13 : sx + 2,
-                sy + 2,
-                11,
-                11,
-                6,
+                enabled ? sx + 11 : sx + 2,
+                y + 9,
+                9,
+                9,
+                5,
                 0xFFFFFFFF
             );
         }
 
-        // Footer
-        int active = 0;
-
-        for (String[] group : MODULES) {
-            for (String module : group) {
-                if (ZhanVisuals.isEnabled(module)) {
-                    active++;
-                }
-            }
-        }
-
+        // Description
         g.fill(
             contentX,
-            panelY + panelH - 29,
-            panelX + panelW - 14,
-            panelY + panelH - 28,
-            BORDER
+            panelY + panelH - 39,
+            panelX + panelW - 12,
+            panelY + panelH - 38,
+            0xFF393044
         );
 
-        drawText(
+        draw(
+            hoveredDescription,
             g,
-            "● " + active + " modules enabled",
             contentX,
-            panelY + panelH - 19,
-            PURPLE
+            panelY + panelH - 28,
+            MUTED
         );
 
-        String close = "RIGHT SHIFT  •  CLOSE";
-
-        drawText(
-            g,
+        String close = "RIGHT SHIFT — ЗАКРЫТЬ";
+        draw(
             close,
-            panelX + panelW - font.width(close) - 15,
-            panelY + panelH - 19,
-            MUTED
+            g,
+            panelX + panelW - font.width(close) - 13,
+            panelY + panelH - 13,
+            PURPLE
         );
     }
 
     private int getCategoryIndex() {
         for (int i = 0; i < CATEGORIES.length; i++) {
-            if (CATEGORIES[i].equals(category)) {
-                return i;
-            }
+            if (CATEGORIES[i].equals(category)) return i;
         }
         return 0;
     }
@@ -444,39 +332,37 @@ public class ZhanClickScreen extends Screen {
         MouseButtonEvent event,
         boolean doubleClick
     ) {
-        double mouseX = event.x();
-        double mouseY = event.y();
+        double mx = event.x();
+        double my = event.y();
 
-        // Category buttons
+        // Categories
         for (int i = 0; i < CATEGORIES.length; i++) {
-            int y = panelY + 72 + i * 45;
+            int y = panelY + 61 + i * 37;
 
             if (
-                mouseX >= panelX + 10 &&
-                mouseX <= panelX + 51 &&
-                mouseY >= y - 2 &&
-                mouseY <= y + 34
+                mx >= panelX + 8 &&
+                mx <= panelX + sidebarW &&
+                my >= y &&
+                my <= y + 29
             ) {
                 category = CATEGORIES[i];
                 return true;
             }
         }
 
-        // Module buttons
+        // Modules
         String[] modules = MODULES[getCategoryIndex()];
 
         for (int i = 0; i < modules.length; i++) {
             int column = i % 2;
             int row = i / 2;
 
-            int x = contentX + column * (cardWidth + 9);
-            int y = startY + row * 45;
+            int x = contentX + column * (cardWidth + 8);
+            int y = startY + row * 33;
 
             if (
-                mouseX >= x &&
-                mouseX <= x + cardWidth &&
-                mouseY >= y &&
-                mouseY <= y + 35
+                mx >= x && mx <= x + cardWidth &&
+                my >= y && my <= y + 27
             ) {
                 ZhanVisuals.toggleModule(modules[i]);
                 return true;
