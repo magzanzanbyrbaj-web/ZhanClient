@@ -1,60 +1,186 @@
+
 package ru.zhanbyrbay.zhanvisuals;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ZhanHud {
 
+    private static boolean registered = false;
+
     public static void register() {
+
+        if (registered) return;
+        registered = true;
+
         HudElementRegistry.addLast(
-            Identifier.fromNamespaceAndPath("zhanvisuals", "main_hud"),
-            (graphics, tickCounter) -> {
-                Minecraft client = Minecraft.getInstance();
-
-                if (client.player == null || client.options.hideGui) {
-                    return;
-                }
-
-                int x = 8;
-                int y = 8;
-
-                graphics.fill(x - 4, y - 4, x + 145, y + 43, 0x99000000);
-
-                graphics.fill(x - 4, y - 4, x + 145, y - 2, 0xFFFF3030);
-
-                graphics.drawString(
-                    client.font,
-                    "ZHANVISUALS",
-                    x,
-                    y,
-                    0xFFFF3030,
-                    false
-                );
-
-                graphics.drawString(
-                    client.font,
-                    "FPS: " + client.getFps(),
-                    x,
-                    y + 13,
-                    0xFFFFFFFF,
-                    false
-                );
-
-                graphics.drawString(
-                    client.font,
-                    String.format(
-                        "XYZ: %.1f / %.1f / %.1f",
-                        client.player.getX(),
-                        client.player.getY(),
-                        client.player.getZ()
-                    ),
-                    x,
-                    y + 26,
-                    0xFFFFFFFF,
-                    false
-                );
-            }
+            Identifier.fromNamespaceAndPath(
+                "zhanvisuals",
+                "main_hud"
+            ),
+            (graphics, tickCounter) -> render(graphics)
         );
+    }
+
+    private static void render(GuiGraphics graphics) {
+
+        Minecraft client = Minecraft.getInstance();
+
+        if (client.player == null || client.options.hideGui) {
+            return;
+        }
+
+        List<String> lines = new ArrayList<>();
+
+        if (ZhanVisuals.fpsCounter) {
+            lines.add("FPS: " + client.getFps());
+        }
+
+        if (ZhanVisuals.coordinates) {
+
+            double x = client.player.getX();
+            double y = client.player.getY();
+            double z = client.player.getZ();
+
+            lines.add(String.format(
+                java.util.Locale.ROOT,
+                "XYZ: %.1f / %.1f / %.1f",
+                x, y, z
+            ));
+        }
+
+        if (ZhanVisuals.armorHUD) {
+
+            int armor = 0;
+
+            for (ItemStack stack : client.player.getArmorSlots()) {
+                if (!stack.isEmpty()) {
+                    armor++;
+                }
+            }
+
+            lines.add("Armor: " + armor + "/4");
+        }
+
+        if (ZhanVisuals.totemCounter) {
+
+            int totems = 0;
+
+            for (ItemStack stack : client.player.getInventory().items) {
+                if (stack.is(Items.TOTEM_OF_UNDYING)) {
+                    totems += stack.getCount();
+                }
+            }
+
+            for (ItemStack stack : client.player.getInventory().offhand) {
+                if (stack.is(Items.TOTEM_OF_UNDYING)) {
+                    totems += stack.getCount();
+                }
+            }
+
+            lines.add("Totems: " + totems);
+        }
+
+        // HUD panel
+        if (!lines.isEmpty()) {
+
+            int panelHeight = 8 + lines.size() * 13;
+
+            graphics.fill(
+                4, 4,
+                190, panelHeight,
+                0x990B0D13
+            );
+
+            graphics.fill(
+                4, 4,
+                6, panelHeight,
+                0xFFFF3548
+            );
+
+            int y = 9;
+
+            for (String line : lines) {
+
+                graphics.drawString(
+                    client.font,
+                    line,
+                    12,
+                    y,
+                    0xFFFFFFFF,
+                    false
+                );
+
+                y += 13;
+            }
+        }
+
+        // HitColor + CustomCrosshair
+        if (ZhanVisuals.hitColor || ZhanVisuals.customCrosshair) {
+
+            boolean target = false;
+
+            if (client.hitResult instanceof EntityHitResult result) {
+
+                Entity entity = result.getEntity();
+
+                target = entity instanceof LivingEntity
+                    && entity.isAlive();
+            }
+
+            int color = (
+                ZhanVisuals.hitColor && target
+            ) ? 0xFFFF3030 : 0xFFFFFFFF;
+
+            int centerX =
+                client.getWindow().getGuiScaledWidth() / 2;
+
+            int centerY =
+                client.getWindow().getGuiScaledHeight() / 2;
+
+            // Custom crosshair
+            graphics.fill(
+                centerX - 5,
+                centerY - 1,
+                centerX - 2,
+                centerY + 1,
+                color
+            );
+
+            graphics.fill(
+                centerX + 2,
+                centerY - 1,
+                centerX + 5,
+                centerY + 1,
+                color
+            );
+
+            graphics.fill(
+                centerX - 1,
+                centerY - 5,
+                centerX + 1,
+                centerY - 2,
+                color
+            );
+
+            graphics.fill(
+                centerX - 1,
+                centerY + 2,
+                centerX + 1,
+                centerY + 5,
+                color
+            );
+        }
     }
 }
