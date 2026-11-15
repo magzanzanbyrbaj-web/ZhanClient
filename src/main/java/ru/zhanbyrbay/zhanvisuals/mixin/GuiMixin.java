@@ -13,9 +13,11 @@ import ru.zhanbyrbay.zhanvisuals.ZhanVisuals;
 @Mixin(Gui.class)
 public abstract class GuiMixin {
 
-    @Inject(method = "renderBossBarHud", at = @At("HEAD"), cancellable = true)
-    private void zhanvisuals$noBossBar(CallbackInfo ci) {
-        if (ZhanVisuals.noBossBar) ci.cancel();
+    @Inject(
+    method = "renderBossOverlay",
+    at = @At("HEAD"),
+    cancellable = true
+)
     }
 
     @Inject(method = "renderScoreboardSidebar", at = @At("HEAD"), cancellable = true)
