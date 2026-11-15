@@ -20,7 +20,7 @@ public final class ConfigManager {
 
     private ConfigManager() {}
 
-    private static Path profile(String name) {
+    private static Path getProfile(String name) {
         if (name == null || !name.matches("[a-zA-Z0-9_-]{1,24}")) {
             throw new IllegalArgumentException("Invalid config name");
         }
@@ -30,10 +30,9 @@ public final class ConfigManager {
 
     public static boolean save(String name) {
         try {
-            Path folder = profile(name);
+            Path folder = getProfile(name);
             Files.createDirectories(folder);
 
-            // Сначала сохраняем текущие настройки.
             ZhanVisuals.saveSettings();
             HudConfig.saveAll();
 
@@ -41,23 +40,16 @@ public final class ConfigManager {
             Path hud = ROOT.resolve("hud.properties");
 
             if (Files.exists(settings)) {
-                Files.copy(
-                    settings,
-                    folder.resolve("settings.properties"),
-                    StandardCopyOption.REPLACE_EXISTING
-                );
+                Files.copy(settings, folder.resolve("settings.properties"),
+                    StandardCopyOption.REPLACE_EXISTING);
             }
 
             if (Files.exists(hud)) {
-                Files.copy(
-                    hud,
-                    folder.resolve("hud.properties"),
-                    StandardCopyOption.REPLACE_EXISTING
-                );
+                Files.copy(hud, folder.resolve("hud.properties"),
+                    StandardCopyOption.REPLACE_EXISTING);
             }
 
             return true;
-
         } catch (Exception e) {
             System.err.println("[ZhanVisuals] Config save error: " + e.getMessage());
             return false;
@@ -66,7 +58,7 @@ public final class ConfigManager {
 
     public static boolean load(String name) {
         try {
-            Path folder = profile(name);
+            Path folder = getProfile(name);
 
             Path settings = folder.resolve("settings.properties");
             Path hud = folder.resolve("hud.properties");
@@ -78,25 +70,18 @@ public final class ConfigManager {
             Files.createDirectories(ROOT);
 
             if (Files.exists(settings)) {
-                Files.copy(
-                    settings,
-                    ROOT.resolve("settings.properties"),
-                    StandardCopyOption.REPLACE_EXISTING
-                );
+                Files.copy(settings, ROOT.resolve("settings.properties"),
+                    StandardCopyOption.REPLACE_EXISTING);
                 ZhanVisuals.loadSettings();
             }
 
             if (Files.exists(hud)) {
-                Files.copy(
-                    hud,
-                    ROOT.resolve("hud.properties"),
-                    StandardCopyOption.REPLACE_EXISTING
-                );
+                Files.copy(hud, ROOT.resolve("hud.properties"),
+                    StandardCopyOption.REPLACE_EXISTING);
                 HudConfig.load();
             }
 
             return true;
-
         } catch (Exception e) {
             System.err.println("[ZhanVisuals] Config load error: " + e.getMessage());
             return false;
@@ -105,7 +90,7 @@ public final class ConfigManager {
 
     public static boolean delete(String name) {
         try {
-            Path folder = profile(name);
+            Path folder = getProfile(name);
 
             if (!Files.exists(folder)) {
                 return false;
@@ -123,7 +108,6 @@ public final class ConfigManager {
             }
 
             return true;
-
         } catch (Exception e) {
             System.err.println("[ZhanVisuals] Config delete error: " + e.getMessage());
             return false;
@@ -138,9 +122,10 @@ public final class ConfigManager {
 
             try (var files = Files.list(PROFILES)) {
                 files.filter(Files::isDirectory)
-                    .forEach(path -> result.add(path.getFileName().toString()));
+                    .forEach(path ->
+                        result.add(path.getFileName().toString())
+                    );
             }
-
         } catch (IOException e) {
             System.err.println("[ZhanVisuals] Config list error: " + e.getMessage());
         }
@@ -150,7 +135,7 @@ public final class ConfigManager {
 
     public static boolean exists(String name) {
         try {
-            return Files.isDirectory(profile(name));
+            return Files.isDirectory(getProfile(name));
         } catch (Exception e) {
             return false;
         }
