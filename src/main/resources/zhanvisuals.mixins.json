@@ -1,0 +1,13 @@
+
+{
+  "required": true,
+  "package": "ru.zhanbyrbay.zhanvisuals.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "zhanvisuals.refmap.json",
+  "client": [
+    "NoRenderMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
