@@ -1,11 +1,14 @@
 
 {
   "required": true,
+  "minVersion": "0.8",
   "package": "ru.zhanbyrbay.zhanvisuals.mixin",
   "compatibilityLevel": "JAVA_21",
   "refmap": "zhanvisuals.refmap.json",
   "client": [
-    "NoRenderMixin"
+    "LevelRendererMixin",
+    "GuiMixin",
+    "GameRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1
