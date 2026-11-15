@@ -1,584 +1,309 @@
 
 package ru.zhanbyrbay.zhanvisuals;
 
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.HudElementRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.phys.EntityHitResult;
-
-import java.util.Locale;
 
 public class ZhanHud {
 
-    private static boolean registered = false;
+    private static LivingEntity lastTarget;
+    private static long targetExpireTime;
 
-    private static final int PURPLE = 0xFFAA78FF;
-    private static final int LIGHT = 0xFFF4EEFF;
-    private static final int MUTED = 0xFFAAA1B8;
-    private static final int PANEL = 0xE6100E17;
-    private static final int BORDER = 0xFF393044;
+    private static int watermarkX = 8;
+    private static int watermarkY = 8;
+
+    private static int targetX = 8;
+    private static int targetY = 45;
+
+    private static int armorX = 8;
+    private static int armorY = 90;
+
+    private static int speedX = 8;
+    private static int speedY = 130;
+
+    private static boolean editing = false;
 
     public static void register() {
-        if (registered) return;
-        registered = true;
-
         HudElementRegistry.addLast(
-            Identifier.fromNamespaceAndPath(
-                "zhanvisuals",
-                "main_hud"
-            ),
+            ResourceLocation.fromNamespaceAndPath("zhanvisuals", "main_hud"),
             (graphics, tickCounter) -> render(graphics)
         );
     }
 
-    private static void rounded(
-        GuiGraphics g,
-        int x,
-        int y,
-        int w,
-        int h,
-        int radius,
-        int color
-    ) {
-        radius = Math.min(radius, Math.min(w / 2, h / 2));
-
-        for (int row = 0; row < h; row++) {
-            int inset = 0;
-
-            if (row < radius) {
-                double dy = radius - row - 0.5;
-                inset = radius - (int)Math.sqrt(
-                    Math.max(0, radius * radius - dy * dy)
-                );
-            } else if (row >= h - radius) {
-                double dy = row - (h - radius) + 0.5;
-                inset = radius - (int)Math.sqrt(
-                    Math.max(0, radius * radius - dy * dy)
-                );
-            }
-
-            g.fill(
-                x + inset,
-                y + row,
-                x + w - inset,
-                y + row + 1,
-                color
-            );
-        }
-    }
-
-    private static void render(GuiGraphics g) {
+    private static void render(GuiGraphics graphics) {
         Minecraft mc = Minecraft.getInstance();
 
-        if (mc.player == null || mc.options.hideGui) {
-            return;
+        if (mc.player == null || mc.options.hideGui) return;
+
+        int screenWidth = graphics.guiWidth();
+        int screenHeight = graphics.guiHeight();
+
+        if (ZhanVisuals.watermark) {
+            drawWatermark(graphics, mc);
         }
 
-        renderWatermark(mc, g);
-        renderStats(mc, g);
-        renderArmor(mc, g);
-        renderCrosshair(mc, g);
-        renderTargetHUD(mc, g);
-        renderKeys(mc, g);
-    }
+        updateTarget(mc);
 
-    // WATERMARK
-    private static void renderWatermark(
-        Minecraft mc,
-        GuiGraphics g
-    ) {
-        if (!ZhanVisuals.watermark) return;
-
-        int screenWidth = mc.getWindow().getGuiScaledWidth();
-
-        String title = "ZHANVISUALS";
-        String fps = mc.getFps() + " FPS";
-        String ping = getPing(mc) + " MS";
-
-        int titleWidth = mc.font.width(title);
-        int fpsWidth = mc.font.width(fps);
-        int pingWidth = mc.font.width(ping);
-
-        int width = titleWidth + fpsWidth + pingWidth + 67;
-        int height = 25;
-
-        int x = (screenWidth - width) / 2;
-        int y = 7;
-
-        rounded(g, x, y, width, height, 9, PANEL);
-
-        g.fill(
-            x + 9, y + 5,
-            x + 11, y + 20,
-            PURPLE
-        );
-
-        // Logo
-        g.fill(x + 16, y + 11, x + 19, y + 14, PURPLE);
-        g.fill(x + 20, y + 8, x + 22, y + 17, PURPLE);
-        g.fill(x + 23, y + 11, x + 26, y + 14, PURPLE);
-
-        g.drawString(
-            mc.font,
-            title,
-            x + 32,
-            y + 9,
-            LIGHT,
-            false
-        );
-
-        int separatorX = x + 32 + titleWidth + 9;
-
-        g.fill(
-            separatorX, y + 6,
-            separatorX + 1, y + 19,
-            BORDER
-        );
-
-        g.drawString(
-            mc.font,
-            fps,
-            separatorX + 9,
-            y + 9,
-            PURPLE,
-            false
-        );
-
-        int pingX = separatorX + 9 + fpsWidth + 9;
-
-        g.fill(
-            pingX - 5, y + 6,
-            pingX - 4, y + 19,
-            BORDER
-        );
-
-        g.drawString(
-            mc.font,
-            ping,
-            pingX + 4,
-            y + 9,
-            MUTED,
-            false
-        );
-    }
-
-    // STATS
-    private static void renderStats(
-        Minecraft mc,
-        GuiGraphics g
-    ) {
-        int count = 0;
-
-        if (ZhanVisuals.fpsCounter) count++;
-        if (ZhanVisuals.coordinates) count++;
-        if (ZhanVisuals.pingDisplay) count++;
-        if (ZhanVisuals.totemCounter) count++;
-        if (ZhanVisuals.speedometer) count++;
-
-        if (count == 0) return;
-
-        int x = 8;
-        int y = ZhanVisuals.watermark ? 39 : 8;
-        int lineHeight = 13;
-        int height = 10 + count * lineHeight;
-
-        rounded(
-            g,
-            x,
-            y,
-            151,
-            height,
-            7,
-            PANEL
-        );
-
-        g.fill(
-            x + 7,
-            y + 7,
-            x + 9,
-            y + height - 7,
-            PURPLE
-        );
-
-        int textY = y + 7;
-
-        if (ZhanVisuals.fpsCounter) {
-            drawStat(
-                mc, g, "FPS",
-                String.valueOf(mc.getFps()),
-                x + 15, textY
-            );
-            textY += lineHeight;
+        if (ZhanVisuals.targetHUD && lastTarget != null
+            && System.currentTimeMillis() < targetExpireTime) {
+            drawTarget(graphics, lastTarget);
         }
 
-        if (ZhanVisuals.coordinates) {
-            String coords = String.format(
-                Locale.ROOT,
-                "%.1f %.1f %.1f",
-                mc.player.getX(),
-                mc.player.getY(),
-                mc.player.getZ()
-            );
-
-            drawStat(
-                mc, g, "XYZ",
-                coords,
-                x + 15, textY
-            );
-            textY += lineHeight;
-        }
-
-        if (ZhanVisuals.pingDisplay) {
-            drawStat(
-                mc, g, "PING",
-                getPing(mc) + " ms",
-                x + 15, textY
-            );
-            textY += lineHeight;
-        }
-
-        if (ZhanVisuals.totemCounter) {
-            drawStat(
-                mc, g, "TOTEMS",
-                String.valueOf(getTotems(mc)),
-                x + 15, textY
-            );
-            textY += lineHeight;
+        if (ZhanVisuals.armorHUD) {
+            drawArmor(graphics, mc);
         }
 
         if (ZhanVisuals.speedometer) {
-            drawStat(
-                mc, g, "SPEED",
-                String.format(
-                    Locale.ROOT,
-                    "%.1f m/s",
-                    ZhanVisuals.currentSpeed
-                ),
-                x + 15, textY
+            drawSpeed(graphics);
+        }
+
+        if (ZhanVisuals.coordinates) {
+            drawCoordinates(graphics, mc);
+        }
+
+        if (ZhanVisuals.fpsCounter) {
+            graphics.drawString(
+                mc.font,
+                "FPS: " + mc.getFps(),
+                screenWidth - 65,
+                8,
+                0xFFFFFFFF,
+                true
             );
         }
-    }
 
-    private static void drawStat(
-        Minecraft mc,
-        GuiGraphics g,
-        String label,
-        String value,
-        int x,
-        int y
-    ) {
-        g.drawString(
-            mc.font,
-            label,
-            x,
-            y,
-            PURPLE,
-            false
-        );
+        if (ZhanVisuals.pingDisplay && mc.player.connection != null) {
+            var info = mc.player.connection.getPlayerInfo(mc.player.getUUID());
 
-        g.drawString(
-            mc.font,
-            value,
-            x + 49,
-            y,
-            LIGHT,
-            false
-        );
-    }
-
-    private static int getPing(Minecraft mc) {
-        if (mc.getConnection() == null || mc.player == null) {
-            return 0;
+            if (info != null) {
+                graphics.drawString(
+                    mc.font,
+                    "PING: " + info.getLatency(),
+                    screenWidth - 80,
+                    20,
+                    0xFFFFFFFF,
+                    true
+                );
+            }
         }
 
-        var info = mc.getConnection().getPlayerInfo(
-            mc.player.getUUID()
-        );
+        if (ZhanVisuals.totemCounter) {
+            drawTotems(graphics, mc);
+        }
 
-        return info == null ? 0 : info.getLatency();
+        if (ZhanVisuals.keystrokes) {
+            drawKeystrokes(graphics, mc);
+        }
     }
 
-    private static int getTotems(Minecraft mc) {
-        int total = 0;
+    private static void updateTarget(Minecraft mc) {
+        if (mc.crosshairPickEntity instanceof LivingEntity target
+            && target.isAlive()
+            && target != mc.player) {
 
-        for (int i = 0; i < 36; i++) {
-            ItemStack stack = mc.player.getInventory().getItem(i);
+            lastTarget = target;
+            targetExpireTime = System.currentTimeMillis() + 3000;
+        }
 
-            if (stack.is(Items.TOTEM_OF_UNDYING)) {
-                total += stack.getCount();
+        if (lastTarget != null && System.currentTimeMillis() > targetExpireTime) {
+            lastTarget = null;
+        }
+    }
+
+    private static void drawWatermark(GuiGraphics g, Minecraft mc) {
+        String text = "ZhanVisuals | " + mc.getFps() + " FPS";
+
+        drawPanel(g, watermarkX, watermarkY, 125, 22);
+        g.drawString(mc.font, text, watermarkX + 7, watermarkY + 7, 0xFFE4B5FF, true);
+    }
+
+    private static void drawTarget(GuiGraphics g, LivingEntity target) {
+        int x = targetX;
+        int y = targetY;
+
+        drawPanel(g, x, y, 150, 48);
+
+        String name = target.getName().getString();
+
+        g.drawString(
+            Minecraft.getInstance().font,
+            name,
+            x + 8,
+            y + 8,
+            0xFFFFFFFF,
+            true
+        );
+
+        int health = (int) target.getHealth();
+        int maxHealth = (int) target.getMaxHealth();
+
+        g.drawString(
+            Minecraft.getInstance().font,
+            "HP: " + health + " / " + maxHealth,
+            x + 8,
+            y + 22,
+            0xFFFF7777,
+            true
+        );
+
+        int barWidth = 130;
+        int currentWidth = Math.max(
+            0,
+            Math.min(barWidth, (int) (barWidth * target.getHealth() / target.getMaxHealth()))
+        );
+
+        g.fill(x + 8, y + 36, x + 8 + barWidth, y + 40, 0xFF39313F);
+        g.fill(x + 8, y + 36, x + 8 + currentWidth, y + 40, 0xFFBD72FF);
+    }
+
+    private static void drawArmor(GuiGraphics g, Minecraft mc) {
+        int x = armorX;
+        int y = armorY;
+
+        drawPanel(g, x, y, 100, 20);
+
+        int offset = 4;
+
+        for (ItemStack stack : mc.player.getArmorSlots()) {
+            if (!stack.isEmpty()) {
+                g.renderItem(stack, x + offset, y + 2);
+            }
+
+            offset += 22;
+        }
+    }
+
+    private static void drawSpeed(GuiGraphics g) {
+        String text = String.format("Speed: %.2f", ZhanVisuals.currentSpeed);
+
+        drawPanel(g, speedX, speedY, 100, 22);
+
+        g.drawString(
+            Minecraft.getInstance().font,
+            text,
+            speedX + 7,
+            speedY + 7,
+            0xFFE4B5FF,
+            true
+        );
+    }
+
+    private static void drawCoordinates(GuiGraphics g, Minecraft mc) {
+        var pos = mc.player.blockPosition();
+
+        String text = "XYZ: " + pos.getX() + " "
+            + pos.getY() + " " + pos.getZ();
+
+        g.drawString(
+            mc.font,
+            text,
+            8,
+            g.guiHeight() - 15,
+            0xFFFFFFFF,
+            true
+        );
+    }
+
+    private static void drawTotems(GuiGraphics g, Minecraft mc) {
+        int count = 0;
+
+        for (ItemStack stack : mc.player.getInventory().items) {
+            if (stack.is(net.minecraft.world.item.Items.TOTEM_OF_UNDYING)) {
+                count += stack.getCount();
             }
         }
 
         ItemStack offhand = mc.player.getOffhandItem();
 
-        if (offhand.is(Items.TOTEM_OF_UNDYING)) {
-            total += offhand.getCount();
+        if (offhand.is(net.minecraft.world.item.Items.TOTEM_OF_UNDYING)) {
+            count += offhand.getCount();
         }
-
-        return total;
-    }
-
-    // ARMOR HUD
-    private static void renderArmor(
-        Minecraft mc,
-        GuiGraphics g
-    ) {
-        if (!ZhanVisuals.armorHUD) return;
-
-        EquipmentSlot[] slots = {
-            EquipmentSlot.HEAD,
-            EquipmentSlot.CHEST,
-            EquipmentSlot.LEGS,
-            EquipmentSlot.FEET
-        };
-
-        int screenWidth = mc.getWindow().getGuiScaledWidth();
-        int startX = screenWidth / 2 - 42;
-        int y = mc.getWindow().getGuiScaledHeight() - 48;
-
-        rounded(
-            g,
-            startX - 7,
-            y - 5,
-            100,
-            29,
-            7,
-            PANEL
-        );
-
-        for (int i = 0; i < slots.length; i++) {
-            ItemStack stack = mc.player.getItemBySlot(slots[i]);
-
-            if (!stack.isEmpty()) {
-                g.renderItem(
-                    stack,
-                    startX + i * 22,
-                    y
-                );
-            }
-        }
-    }
-
-    // CROSSHAIR
-    private static void renderCrosshair(
-        Minecraft mc,
-        GuiGraphics g
-    ) {
-        if (!ZhanVisuals.customCrosshair) return;
-
-        boolean target = false;
-
-        if (mc.hitResult instanceof EntityHitResult hit) {
-            Entity entity = hit.getEntity();
-
-            target =
-                entity instanceof LivingEntity &&
-                entity.isAlive();
-        }
-
-        int color =
-            ZhanVisuals.hitColor && target
-                ? 0xFFFF587C
-                : PURPLE;
-
-        int cx = mc.getWindow().getGuiScaledWidth() / 2;
-        int cy = mc.getWindow().getGuiScaledHeight() / 2;
-
-        g.fill(cx - 6, cy - 1, cx - 2, cy + 1, color);
-        g.fill(cx + 2, cy - 1, cx + 6, cy + 1, color);
-        g.fill(cx - 1, cy - 6, cx + 1, cy - 2, color);
-        g.fill(cx - 1, cy + 2, cx + 1, cy + 6, color);
-    }
-
-    // TARGET HUD
-    private static void renderTargetHUD(
-        Minecraft mc,
-        GuiGraphics g
-    ) {
-        if (!ZhanVisuals.targetHUD) return;
-
-        if (!(mc.hitResult instanceof EntityHitResult hit)) {
-            return;
-        }
-
-        Entity entity = hit.getEntity();
-
-        if (!(entity instanceof LivingEntity living) ||
-            !living.isAlive()) {
-            return;
-        }
-
-        int screenWidth = mc.getWindow().getGuiScaledWidth();
-        int screenHeight = mc.getWindow().getGuiScaledHeight();
-
-        int width = 164;
-        int height = 57;
-
-        int x = Math.min(
-            screenWidth - width - 8,
-            screenWidth / 2 + 23
-        );
-
-        int y = Math.min(
-            screenHeight - height - 8,
-            screenHeight / 2 + 20
-        );
-
-        float health = living.getHealth();
-        float maxHealth = Math.max(1.0F, living.getMaxHealth());
-
-        float ratio = Math.max(
-            0.0F,
-            Math.min(1.0F, health / maxHealth)
-        );
-
-        rounded(g, x, y, width, height, 8, PANEL);
-
-        g.fill(
-            x + 8, y + 7,
-            x + width - 8, y + 8,
-            BORDER
-        );
-
-        g.fill(
-            x + 9, y + 9,
-            x + 11, y + 43,
-            PURPLE
-        );
-
-        rounded(
-            g,
-            x + 17,
-            y + 14,
-            25,
-            25,
-            6,
-            0xFF30243F
-        );
 
         g.drawString(
             mc.font,
-            living.getName(),
-            x + 49,
-            y + 14,
-            LIGHT,
-            false
+            "Totems: " + count,
+            8,
+            g.guiHeight() - 28,
+            0xFFFFD77A,
+            true
         );
-
-        String hp = String.format(
-            Locale.ROOT,
-            "%.1f / %.1f HP",
-            health,
-            maxHealth
-        );
-
-        g.drawString(
-            mc.font,
-            hp,
-            x + 49,
-            y + 28,
-            MUTED,
-            false
-        );
-
-        int barX = x + 17;
-        int barY = y + 45;
-        int barWidth = width - 34;
-
-        rounded(
-            g,
-            barX,
-            barY,
-            barWidth,
-            5,
-            3,
-            0xFF393342
-        );
-
-        if (ratio > 0) {
-            rounded(
-                g,
-                barX,
-                barY,
-                Math.max(3, (int)(barWidth * ratio)),
-                5,
-                3,
-                PURPLE
-            );
-        }
     }
 
-    // KEYSTROKES
-    private static void renderKeys(
-        Minecraft mc,
-        GuiGraphics g
-    ) {
-        if (!ZhanVisuals.keystrokes) return;
+    private static void drawKeystrokes(GuiGraphics g, Minecraft mc) {
+        int x = g.guiWidth() - 75;
+        int y = g.guiHeight() - 65;
 
-        int x = 10;
-        int y = mc.getWindow().getGuiScaledHeight() - 72;
-
-        drawKey(mc, g, x + 26, y, 26, "W",
-            mc.options.keyUp.isDown());
-
-        drawKey(mc, g, x, y + 23, 26, "A",
-            mc.options.keyLeft.isDown());
-
-        drawKey(mc, g, x + 26, y + 23, 26, "S",
-            mc.options.keyDown.isDown());
-
-        drawKey(mc, g, x + 52, y + 23, 26, "D",
-            mc.options.keyRight.isDown());
-
-        drawKey(mc, g, x + 84, y + 23, 38, "LMB",
-            mc.options.keyAttack.isDown());
-
-        drawKey(mc, g, x + 126, y + 23, 38, "RMB",
-            mc.options.keyUse.isDown());
+        drawKey(g, x + 24, y, "W", mc.options.keyUp.isDown());
+        drawKey(g, x, y + 22, "A", mc.options.keyLeft.isDown());
+        drawKey(g, x + 24, y + 22, "S", mc.options.keyDown.isDown());
+        drawKey(g, x + 48, y + 22, "D", mc.options.keyRight.isDown());
+        drawKey(g, x + 24, y + 44, "SP", mc.options.keyJump.isDown());
     }
 
     private static void drawKey(
-        Minecraft mc,
+        GuiGraphics g,
+        int x,
+        int y,
+        String text,
+        boolean pressed
+    ) {
+        int color = pressed ? 0xFF9D50D8 : 0xFF29232F;
+
+        g.fill(x, y, x + 22, y + 20, color);
+
+        g.drawString(
+            Minecraft.getInstance().font,
+            text,
+            x + 7,
+            y + 6,
+            0xFFFFFFFF,
+            true
+        );
+    }
+
+    private static void drawPanel(
         GuiGraphics g,
         int x,
         int y,
         int width,
-        String text,
-        boolean pressed
+        int height
     ) {
-        rounded(
-            g,
-            x,
-            y,
-            width,
-            20,
-            5,
-            pressed ? 0xFF7045A8 : PANEL
-        );
+        g.fill(x, y, x + width, y + height, 0xCC17131F);
+        g.fill(x, y, x + width, y + 1, 0xFFB66BFF);
+        g.fill(x, y + height - 1, x + width, y + height, 0xFF49305C);
+    }
 
-        g.fill(
-            x + 5,
-            y + 17,
-            x + width - 5,
-            y + 18,
-            pressed ? PURPLE : BORDER
-        );
+    public static void setEditing(boolean value) {
+        editing = value;
+    }
 
-        int textWidth = mc.font.width(text);
+    public static boolean isEditing() {
+        return editing;
+    }
 
-        g.drawString(
-            mc.font,
-            text,
-            x + (width - textWidth) / 2,
-            y + 6,
-            LIGHT,
-            false
-        );
+    public static void setPosition(String element, int x, int y) {
+        switch (element) {
+            case "watermark" -> {
+                watermarkX = x;
+                watermarkY = y;
+            }
+            case "target" -> {
+                targetX = x;
+                targetY = y;
+            }
+            case "armor" -> {
+                armorX = x;
+                armorY = y;
+            }
+            case "speed" -> {
+                speedX = x;
+                speedY = y;
+            }
+        }
     }
 }
