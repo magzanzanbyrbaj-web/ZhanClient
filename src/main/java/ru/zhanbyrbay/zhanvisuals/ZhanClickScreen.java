@@ -5,36 +5,34 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.FontDescription;
-import net.minecraft.resources.Identifier;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public class ZhanClickScreen extends Screen {
 
-    private static final Identifier FONT =
-        Identifier.fromNamespaceAndPath("zhanvisuals", "ui");
-
     private static final String[] CATEGORIES = {
-        "Combat",
         "Visuals",
         "HUD",
-        "Player",
         "Settings"
     };
 
     private static final String[][] MODULES = {
-        {"Hit Indicator", "Combo Counter", "CPS Counter"},
-        {"Low Fire", "Fullbright", "Custom Crosshair", "Hit Particles"},
-        {"FPS Counter", "Coordinates", "Armor HUD", "Totem Counter"},
-        {"Item Physics", "Animations", "Motion Blur"},
-        {"Interface", "Color Theme", "Configuration"}
+        {
+            "HitColor",
+            "CustomCrosshair",
+            "Fullbright"
+        },
+        {
+            "FPS Counter",
+            "Coordinates",
+            "Armor HUD",
+            "Totem Counter"
+        },
+        {
+            "Performance Boost"
+        }
     };
 
-    private final Set<String> enabled = new HashSet<>();
+    private int selectedCategory = 0;
 
-    private int selectedCategory = 1;
     private int panelX;
     private int panelY;
 
@@ -42,22 +40,16 @@ public class ZhanClickScreen extends Screen {
         super(Component.literal("ZhanVisuals 3.0"));
     }
 
-    private Component custom(String text) {
-        return Component.literal(text)
-            .withStyle(style ->
-                style.withFont(new FontDescription.Resource(FONT))
-            );
-    }
-
     @Override
     public void render(
-        GuiGraphics graphics,
+        GuiGraphics g,
         int mouseX,
         int mouseY,
         float delta
     ) {
+
         // Background without blur
-        graphics.fill(
+        g.fill(
             0, 0, width, height,
             0x9905080D
         );
@@ -71,42 +63,45 @@ public class ZhanClickScreen extends Screen {
         int x = panelX;
         int y = panelY;
 
-        // Main window
-        graphics.fill(
-            x, y, x + w, y + h,
+        // Main panel
+        g.fill(
+            x, y,
+            x + w, y + h,
             0xF20C0E14
         );
 
-        // Red top accent
-        graphics.fill(
-            x, y, x + w, y + 3,
+        // Red line
+        g.fill(
+            x, y,
+            x + w, y + 3,
             0xFFFF3030
         );
 
         // Sidebar
-        graphics.fill(
-            x, y + 3, x + 135, y + h,
+        g.fill(
+            x, y + 3,
+            x + 135, y + h,
             0xFF11141C
         );
 
         // Logo
-        graphics.drawString(
+        g.drawString(
             font,
-            custom("ZHANVISUALS"),
-            x + 16, y + 17,
+            "ZHANVISUALS",
+            x + 15, y + 17,
             0xFFFF414D,
             false
         );
 
-        graphics.drawString(
+        g.drawString(
             font,
-            custom("3.0"),
-            x + 103, y + 17,
+            "3.0",
+            x + 105, y + 17,
             0xFF777D8B,
             false
         );
 
-        graphics.fill(
+        g.fill(
             x + 14, y + 37,
             x + 120, y + 38,
             0xFF292D38
@@ -115,7 +110,7 @@ public class ZhanClickScreen extends Screen {
         // Categories
         for (int i = 0; i < CATEGORIES.length; i++) {
 
-            int cy = y + 51 + i * 35;
+            int cy = y + 55 + i * 38;
 
             boolean selected = selectedCategory == i;
 
@@ -126,29 +121,31 @@ public class ZhanClickScreen extends Screen {
                 mouseY <= cy + 20;
 
             if (selected) {
-                graphics.fill(
+
+                g.fill(
                     x + 9, cy - 9,
                     x + 126, cy + 20,
                     0xFF29202A
                 );
 
-                graphics.fill(
+                g.fill(
                     x + 9, cy - 9,
                     x + 12, cy + 20,
                     0xFFFF3548
                 );
 
             } else if (hovered) {
-                graphics.fill(
+
+                g.fill(
                     x + 9, cy - 9,
                     x + 126, cy + 20,
                     0xFF1B1E28
                 );
             }
 
-            graphics.drawString(
+            g.drawString(
                 font,
-                custom(CATEGORIES[i]),
+                CATEGORIES[i],
                 x + 21,
                 cy,
                 selected ? 0xFFFF5967 : 0xFFB5B8C3,
@@ -156,31 +153,31 @@ public class ZhanClickScreen extends Screen {
             );
         }
 
-        // Sidebar footer
-        graphics.drawString(
+        // Footer
+        g.drawString(
             font,
-            custom("Zhanbyrbay"),
+            "Zhanbyrbay",
             x + 15,
             y + h - 23,
             0xFF777D8B,
             false
         );
 
-        // Main content
+        // Content title
         int contentX = x + 155;
 
-        graphics.drawString(
+        g.drawString(
             font,
-            custom(CATEGORIES[selectedCategory].toUpperCase()),
+            CATEGORIES[selectedCategory].toUpperCase(),
             contentX,
             y + 20,
             0xFFFFFFFF,
             false
         );
 
-        graphics.drawString(
+        g.drawString(
             font,
-            custom("Customize your experience"),
+            "Customize your experience",
             contentX,
             y + 37,
             0xFF858B99,
@@ -201,7 +198,8 @@ public class ZhanClickScreen extends Screen {
             int cx = contentX + col * (cardW + 12);
             int cy = y + 65 + row * 65;
 
-            boolean active = enabled.contains(modules[i]);
+            boolean active =
+                ZhanVisuals.isEnabled(modules[i]);
 
             boolean hovered =
                 mouseX >= cx &&
@@ -210,23 +208,23 @@ public class ZhanClickScreen extends Screen {
                 mouseY <= cy + cardH;
 
             // Card
-            graphics.fill(
+            g.fill(
                 cx, cy,
                 cx + cardW, cy + cardH,
                 hovered ? 0xFF242936 : 0xFF191D27
             );
 
             // Accent
-            graphics.fill(
+            g.fill(
                 cx, cy,
                 cx + 2, cy + cardH,
                 active ? 0xFFFF3548 : 0xFF343946
             );
 
             // Module name
-            graphics.drawString(
+            g.drawString(
                 font,
-                custom(modules[i]),
+                modules[i],
                 cx + 12,
                 cy + 12,
                 0xFFE8EAF0,
@@ -237,7 +235,7 @@ public class ZhanClickScreen extends Screen {
             int tx = cx + cardW - 37;
             int ty = cy + 31;
 
-            graphics.fill(
+            g.fill(
                 tx, ty,
                 tx + 25, ty + 12,
                 active ? 0xFFB82D42 : 0xFF343946
@@ -245,15 +243,15 @@ public class ZhanClickScreen extends Screen {
 
             int knobX = active ? tx + 15 : tx + 2;
 
-            graphics.fill(
+            g.fill(
                 knobX, ty + 2,
                 knobX + 8, ty + 10,
                 0xFFFFFFFF
             );
 
-            graphics.drawString(
+            g.drawString(
                 font,
-                custom(active ? "ON" : "OFF"),
+                active ? "ON" : "OFF",
                 cx + 12,
                 cy + 32,
                 active ? 0xFFFF6672 : 0xFF777D8B,
@@ -261,10 +259,9 @@ public class ZhanClickScreen extends Screen {
             );
         }
 
-        // Bottom hint
-        graphics.drawString(
+        g.drawString(
             font,
-            custom("RIGHT SHIFT / CLOSE"),
+            "RIGHT SHIFT / CLOSE",
             contentX,
             y + h - 19,
             0xFF626977,
@@ -277,6 +274,7 @@ public class ZhanClickScreen extends Screen {
         MouseButtonEvent event,
         boolean doubleClicked
     ) {
+
         if (event.button() != 0) {
             return super.mouseClicked(event, doubleClicked);
         }
@@ -291,7 +289,7 @@ public class ZhanClickScreen extends Screen {
         // Category clicks
         for (int i = 0; i < CATEGORIES.length; i++) {
 
-            int cy = y + 51 + i * 35;
+            int cy = y + 55 + i * 38;
 
             if (
                 mouseX >= x + 9 &&
@@ -325,14 +323,8 @@ public class ZhanClickScreen extends Screen {
                 mouseY >= cy &&
                 mouseY <= cy + cardH
             ) {
-                String name = modules[i];
 
-                if (enabled.contains(name)) {
-                    enabled.remove(name);
-                } else {
-                    enabled.add(name);
-                }
-
+                ZhanVisuals.toggleModule(modules[i]);
                 return true;
             }
         }
