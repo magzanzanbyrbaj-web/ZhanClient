@@ -20,6 +20,7 @@ dependencies {
 }
 
 loom {
+    useLegacyMixinAp = true
     mixin {
         defaultRefmapName = "zhanvisuals.refmap.json"
     }
