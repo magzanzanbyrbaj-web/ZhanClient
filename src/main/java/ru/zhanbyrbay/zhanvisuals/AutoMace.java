@@ -21,10 +21,11 @@ public class AutoMace {
                 if (stack.is(Items.MACE)) {
                     int menuSlot = slot < 9 ? slot + 36 : slot;
 
+                    // Исправлено обращение к выбранному слоту через метод getSelectedSlot()
                     mc.gameMode.handleInventoryMouseClick(
                         mc.player.inventoryMenu.containerId,
                         menuSlot,
-                        mc.player.getInventory().selected,
+                        mc.player.getInventory().getSelectedSlot(),
                         ClickType.SWAP,
                         mc.player
                     );
