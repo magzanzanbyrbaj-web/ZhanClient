@@ -1,4 +1,3 @@
-
 package ru.zhanbyrbay.zhanvisuals;
 
 import net.fabricmc.api.ClientModInitializer;
@@ -53,6 +52,13 @@ public class ZhanVisuals implements ClientModInitializer {
 
     public static boolean optimized = false;
     public static boolean autoSwap = false;
+
+    // Новые модули
+    public static boolean aimAssist = false;
+    public static boolean attackAura = false;
+    public static boolean autoInvis = false;
+    public static boolean autoMace = false;
+    public static boolean antiSpam = true;
 
     public static String autoSwapItemA = "minecraft:totem_of_undying";
     public static String autoSwapItemB = "minecraft:ender_pearl";
@@ -132,6 +138,12 @@ public class ZhanVisuals implements ClientModInitializer {
             updateZoom(client);
             updateMovement(client);
             updateSpeed(client);
+
+            // Обработка тиков новых модулей
+            if (aimAssist) AimAssist.tick(client);
+            if (attackAura) AttackAura.tick(client);
+            if (autoInvis) AutoInvis.tick(client);
+            if (autoMace) AutoMace.tick(client);
         });
 
         ZhanHud.register();
@@ -234,6 +246,13 @@ public class ZhanVisuals implements ClientModInitializer {
 
             p.setProperty("optimized", String.valueOf(optimized));
 
+            // Сохранение состояния новых модулей
+            p.setProperty("aimAssist", String.valueOf(aimAssist));
+            p.setProperty("attackAura", String.valueOf(attackAura));
+            p.setProperty("autoInvis", String.valueOf(autoInvis));
+            p.setProperty("autoMace", String.valueOf(autoMace));
+            p.setProperty("antiSpam", String.valueOf(antiSpam));
+
             try (var out = Files.newOutputStream(configFile)) {
                 p.store(out, "ZhanVisuals settings");
             }
@@ -288,6 +307,13 @@ public class ZhanVisuals implements ClientModInitializer {
             noFluid = Boolean.parseBoolean(p.getProperty("noFluid", "false"));
 
             optimized = Boolean.parseBoolean(p.getProperty("optimized", "false"));
+
+            // Загрузка состояния новых модулей
+            aimAssist = Boolean.parseBoolean(p.getProperty("aimAssist", "false"));
+            attackAura = Boolean.parseBoolean(p.getProperty("attackAura", "false"));
+            autoInvis = Boolean.parseBoolean(p.getProperty("autoInvis", "false"));
+            autoMace = Boolean.parseBoolean(p.getProperty("autoMace", "false"));
+            antiSpam = Boolean.parseBoolean(p.getProperty("antiSpam", "true"));
 
         } catch (IOException e) {
             System.err.println("[ZhanVisuals] Load error: " + e.getMessage());
@@ -381,6 +407,11 @@ public class ZhanVisuals implements ClientModInitializer {
             case "No Fluid" -> noFluid;
             case "Performance Boost" -> optimized;
             case "AutoSwap" -> autoSwap;
+            case "AimAssist" -> aimAssist;
+            case "AttackAura" -> attackAura;
+            case "AutoInvis" -> autoInvis;
+            case "AutoMace" -> autoMace;
+            case "AntiSpam" -> antiSpam;
             default -> false;
         };
     }
@@ -413,6 +444,11 @@ public class ZhanVisuals implements ClientModInitializer {
             case "No Fluid" -> noFluid = !noFluid;
             case "Performance Boost" -> toggleOptimization();
             case "AutoSwap" -> autoSwap = !autoSwap;
+            case "AimAssist" -> aimAssist = !aimAssist;
+            case "AttackAura" -> attackAura = !attackAura;
+            case "AutoInvis" -> autoInvis = !autoInvis;
+            case "AutoMace" -> autoMace = !autoMace;
+            case "AntiSpam" -> antiSpam = !antiSpam;
         }
 
         saveSettings();
