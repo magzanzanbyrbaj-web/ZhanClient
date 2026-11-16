@@ -1,3 +1,4 @@
+
 package ru.zhanbyrbay.zhanvisuals;
 
 import net.minecraft.client.Minecraft;
@@ -18,7 +19,13 @@ public class ZhanClickScreen extends Screen {
     private static final int HOVER = 0xFF292235;
 
     private static final String[] CATEGORIES = {
-        "Визуалы", "Интерфейс", "Комбат", "NoRender", "Движение", "Оптимизация", "Утилиты"
+        "Визуалы",
+        "Интерфейс",
+        "Комбат",
+        "NoRender",
+        "Движение",
+        "Оптимизация",
+        "Утилиты"
     };
 
     private static final String[][] MODULES = {
@@ -30,14 +37,14 @@ public class ZhanClickScreen extends Screen {
         },
         {
             "Watermark",
-            "FPS Counter",
-            "Coordinates",
-            "Armor HUD",
-            "Totem Counter",
-            "Ping Display",
-            "Target HUD",
-            "Keystrokes",
-            "Speedometer"
+            "Information",
+            "Key Binds",
+            "Potions",
+            "ArrayList",
+            "Notifications",
+            "Target Hud",
+            "Item Hud",
+            "Use Tracker"
         },
         {
             "AimAssist",
@@ -68,46 +75,46 @@ public class ZhanClickScreen extends Screen {
 
     private static final String[][] DESCRIPTIONS = {
         {
-            "Изменяет цвет при наведении на цель.",
-            "Заменяет стандартный прицел на компактный.",
+            "Изменяет цвет модели при наведении на цель.",
+            "Настраиваемый прицел.",
             "Увеличивает яркость мира.",
             "Уменьшает видимую часть огня."
         },
         {
-            "Показывает название клиента, FPS и ping.",
-            "Отображает текущий FPS.",
-            "Показывает координаты игрока.",
-            "Показывает надетую броню.",
-            "Считает тотемы в инвентаре.",
-            "Показывает задержку соединения.",
-            "Показывает здоровье существа под прицелом.",
-            "Отображает нажатия WASD и кнопок мыши.",
-            "Показывает скорость передвижения."
+            "Название ZhanVisuals, FPS и Ping.",
+            "Информационный блок HUD.",
+            "Отображение нажатий клавиш.",
+            "Отображение эффектов зелий.",
+            "Список активных модулей.",
+            "Уведомления клиента.",
+            "Информация о цели.",
+            "Отображение предметов и брони.",
+            "Отслеживание использования предметов."
         },
         {
-            "Плавная доводка до ближайшей цели.",
-            "Автоматическая атака врагов вокруг.",
-            "Автоматический выбор булавы при падении.",
-            "Быстрый обмен предметов с офхендом."
+            "Настройка доводки до цели.",
+            "Автоматическая атака.",
+            "Настройка выбора булавы.",
+            "Обмен предметами с дополнительной рукой."
         },
         {
-            "Отключает отображение частиц.",
-            "Отключает отображение погоды.",
+            "Отключает частицы.",
+            "Отключает погоду.",
             "Скрывает текстуру тыквы.",
             "Скрывает боссбар.",
-            "Отключает эффект тряски камеры.",
+            "Отключает тряску камеры.",
             "Отключает визуальные эффекты жидкостей."
         },
         {
             "При удержании C приближает изображение.",
-            "Автоматически включает бег при движении вперёд."
+            "Автоматически включает бег."
         },
         {
             "Уменьшает дальность прорисовки и симуляции."
         },
         {
-            "Предотвращает отправку одинаковых сообщений в чат.",
-            "Отслеживает эффект невидимости."
+            "Настройки защиты чата от повторов.",
+            "Отслеживание невидимости."
         }
     };
 
@@ -162,12 +169,12 @@ public class ZhanClickScreen extends Screen {
 
             if (row < radius) {
                 double dy = radius - row - 0.5;
-                inset = radius - (int)Math.sqrt(
+                inset = radius - (int) Math.sqrt(
                     Math.max(0, radius * radius - dy * dy)
                 );
             } else if (row >= h - radius) {
                 double dy = row - (h - radius) + 0.5;
-                inset = radius - (int)Math.sqrt(
+                inset = radius - (int) Math.sqrt(
                     Math.max(0, radius * radius - dy * dy)
                 );
             }
@@ -190,6 +197,26 @@ public class ZhanClickScreen extends Screen {
         int color
     ) {
         g.drawString(font, text, x, y, color, false);
+    }
+
+    private boolean isInterfaceCategory() {
+        return category.equals("Интерфейс");
+    }
+
+    private boolean moduleEnabled(String name) {
+        if (isInterfaceCategory()) {
+            return InterFace.isElementEnabled(name);
+        }
+
+        return ZhanVisuals.isEnabled(name);
+    }
+
+    private void toggleModule(String name) {
+        if (isInterfaceCategory()) {
+            InterFace.toggleElement(name);
+        } else {
+            ZhanVisuals.toggleModule(name);
+        }
     }
 
     @Override
@@ -293,7 +320,9 @@ public class ZhanClickScreen extends Screen {
         draw(category, g, contentX, contentY, LIGHT);
 
         draw(
-            "Настройка модулей клиента",
+            isInterfaceCategory()
+                ? "Настройка элементов HUD"
+                : "Настройка модулей клиента",
             g,
             contentX,
             contentY + 15,
@@ -317,7 +346,7 @@ public class ZhanClickScreen extends Screen {
                 continue;
             }
 
-            boolean enabled = ZhanVisuals.isEnabled(modules[i]);
+            boolean enabled = moduleEnabled(modules[i]);
 
             boolean hovered =
                 mouseX >= x && mouseX <= x + cardWidth &&
@@ -457,7 +486,7 @@ public class ZhanClickScreen extends Screen {
                 my <= y + 27 &&
                 y + 27 <= panelY + panelH - 39
             ) {
-                ZhanVisuals.toggleModule(modules[i]);
+                toggleModule(modules[i]);
                 return true;
             }
         }
