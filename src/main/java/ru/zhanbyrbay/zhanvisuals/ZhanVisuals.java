@@ -9,7 +9,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.ClickType;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.lwjgl.glfw.GLFW;
 
@@ -160,17 +159,16 @@ public class ZhanVisuals implements ClientModInitializer {
 
         if (id == null) return;
 
-        Item wantedItem = BuiltInRegistries.ITEM
-            .getOptional(id)
-            .map(reference -> reference.value())
-            .orElse(null);
-
-        if (wantedItem == null) return;
-
         for (int slot = 0; slot < 36; slot++) {
             ItemStack stack = mc.player.getInventory().getItem(slot);
 
-            if (stack.isEmpty() || stack.getItem() != wantedItem) {
+            if (stack.isEmpty()) {
+                continue;
+            }
+
+            Identifier stackId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+
+            if (!stackId.equals(id)) {
                 continue;
             }
 
