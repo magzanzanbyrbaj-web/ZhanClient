@@ -7,7 +7,7 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -156,7 +156,8 @@ public class ZhanVisuals implements ClientModInitializer {
             wantedId = autoSwapItemA;
         }
 
-        ResourceLocation id = ResourceLocation.tryParse(wantedId);
+        Identifier id = Identifier.tryParse(wantedId);
+
         if (id == null) return;
 
         Item wantedItem = BuiltInRegistries.ITEM.get(id);
@@ -218,6 +219,18 @@ public class ZhanVisuals implements ClientModInitializer {
             p.setProperty("keystrokes", String.valueOf(keystrokes));
             p.setProperty("speedometer", String.valueOf(speedometer));
 
+            p.setProperty("zoom", String.valueOf(zoom));
+            p.setProperty("autoSprint", String.valueOf(autoSprint));
+
+            p.setProperty("noParticles", String.valueOf(noParticles));
+            p.setProperty("noWeather", String.valueOf(noWeather));
+            p.setProperty("noPumpkin", String.valueOf(noPumpkin));
+            p.setProperty("noBossBar", String.valueOf(noBossBar));
+            p.setProperty("noHurtCamera", String.valueOf(noHurtCamera));
+            p.setProperty("noFluid", String.valueOf(noFluid));
+
+            p.setProperty("optimized", String.valueOf(optimized));
+
             try (var out = Files.newOutputStream(configFile)) {
                 p.store(out, "ZhanVisuals settings");
             }
@@ -260,6 +273,18 @@ public class ZhanVisuals implements ClientModInitializer {
             targetHUD = Boolean.parseBoolean(p.getProperty("targetHUD", "true"));
             keystrokes = Boolean.parseBoolean(p.getProperty("keystrokes", "true"));
             speedometer = Boolean.parseBoolean(p.getProperty("speedometer", "true"));
+
+            zoom = Boolean.parseBoolean(p.getProperty("zoom", "false"));
+            autoSprint = Boolean.parseBoolean(p.getProperty("autoSprint", "false"));
+
+            noParticles = Boolean.parseBoolean(p.getProperty("noParticles", "false"));
+            noWeather = Boolean.parseBoolean(p.getProperty("noWeather", "false"));
+            noPumpkin = Boolean.parseBoolean(p.getProperty("noPumpkin", "false"));
+            noBossBar = Boolean.parseBoolean(p.getProperty("noBossBar", "false"));
+            noHurtCamera = Boolean.parseBoolean(p.getProperty("noHurtCamera", "false"));
+            noFluid = Boolean.parseBoolean(p.getProperty("noFluid", "false"));
+
+            optimized = Boolean.parseBoolean(p.getProperty("optimized", "false"));
 
         } catch (IOException e) {
             System.err.println("[ZhanVisuals] Load error: " + e.getMessage());
@@ -319,6 +344,7 @@ public class ZhanVisuals implements ClientModInitializer {
         if (hasLastPosition) {
             double dx = x - lastX;
             double dz = z - lastZ;
+
             currentSpeed = Math.sqrt(dx * dx + dz * dz) * 20.0;
         }
 
