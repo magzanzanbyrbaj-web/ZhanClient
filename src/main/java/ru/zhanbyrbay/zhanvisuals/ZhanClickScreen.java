@@ -414,7 +414,6 @@ public class ZhanClickScreen extends Screen {
         double mx = event.x();
         double my = event.y();
 
-        // OPEN CONFIG MANAGER
         if (
             mx >= panelX + panelW - 112 &&
             mx <= panelX + panelW - 14 &&
@@ -428,7 +427,6 @@ public class ZhanClickScreen extends Screen {
             return true;
         }
 
-        // CATEGORIES
         for (int i = 0; i < CATEGORIES.length; i++) {
             int y = panelY + 55 + i * 28;
 
@@ -443,7 +441,6 @@ public class ZhanClickScreen extends Screen {
             }
         }
 
-        // MODULES
         String[] modules = MODULES[getCategoryIndex()];
 
         for (int i = 0; i < modules.length; i++) {
