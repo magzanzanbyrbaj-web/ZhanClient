@@ -1,12 +1,9 @@
 
 package ru.zhanbyrbay.zhanvisuals;
 
-import net.minecraft.client.Minecraft;
-
 public class InterFace {
 
     private static boolean enabled = true;
-
     private static float hudScale = 1.0f;
 
     public static boolean waterMark = true;
@@ -25,10 +22,8 @@ public class InterFace {
 
     public static void setEnabled(boolean value) {
         enabled = value;
-        ZhanVisuals.watermark = value && waterMark;
-        ZhanVisuals.targetHUD = value && targetHud;
-        ZhanVisuals.armorHUD = value && itemHud;
-        ZhanVisuals.keystrokes = value && keyBinds;
+        apply();
+        ZhanVisuals.saveSettings();
     }
 
     public static void toggle() {
@@ -41,52 +36,52 @@ public class InterFace {
 
     public static void setHudScale(float value) {
         hudScale = Math.max(0.5f, Math.min(1.5f, value));
+        ZhanVisuals.saveSettings();
     }
 
     public static void toggleElement(String name) {
         switch (name) {
-            case "WaterMark" -> {
-                waterMark = !waterMark;
-                ZhanVisuals.watermark = enabled && waterMark;
-            }
+            case "Watermark", "WaterMark" -> waterMark = !waterMark;
             case "Information" -> information = !information;
-            case "Key Binds" -> {
-                keyBinds = !keyBinds;
-                ZhanVisuals.keystrokes = enabled && keyBinds;
-            }
+            case "Key Binds", "Keystrokes" -> keyBinds = !keyBinds;
             case "Potions" -> potions = !potions;
             case "ArrayList" -> arrayList = !arrayList;
             case "Notifications" -> notifications = !notifications;
-            case "Target Hud" -> {
-                targetHud = !targetHud;
-                ZhanVisuals.targetHUD = enabled && targetHud;
-            }
-            case "Item Hud" -> {
-                itemHud = !itemHud;
-                ZhanVisuals.armorHUD = enabled && itemHud;
-            }
+            case "Target Hud", "Target HUD" -> targetHud = !targetHud;
+            case "Item Hud", "Armor HUD" -> itemHud = !itemHud;
             case "Use Tracker" -> useTracker = !useTracker;
         }
 
+        apply();
         ZhanVisuals.saveSettings();
     }
 
     public static boolean isElementEnabled(String name) {
         return switch (name) {
-            case "WaterMark" -> waterMark;
+            case "Watermark", "WaterMark" -> waterMark;
             case "Information" -> information;
-            case "Key Binds" -> keyBinds;
+            case "Key Binds", "Keystrokes" -> keyBinds;
             case "Potions" -> potions;
             case "ArrayList" -> arrayList;
             case "Notifications" -> notifications;
-            case "Target Hud" -> targetHud;
-            case "Item Hud" -> itemHud;
+            case "Target Hud", "Target HUD" -> targetHud;
+            case "Item Hud", "Armor HUD" -> itemHud;
             case "Use Tracker" -> useTracker;
             default -> false;
         };
     }
 
+    public static void apply() {
+        ZhanVisuals.watermark = enabled && waterMark;
+        ZhanVisuals.targetHUD = enabled && targetHud;
+        ZhanVisuals.armorHUD = enabled && itemHud;
+        ZhanVisuals.keystrokes = enabled && keyBinds;
+    }
+
     public static void reset() {
+        enabled = true;
+        hudScale = 1.0f;
+
         waterMark = true;
         information = true;
         keyBinds = true;
@@ -96,9 +91,8 @@ public class InterFace {
         targetHud = true;
         itemHud = true;
         useTracker = true;
-        hudScale = 1.0f;
 
-        setEnabled(true);
+        apply();
         ZhanVisuals.saveSettings();
     }
 }
