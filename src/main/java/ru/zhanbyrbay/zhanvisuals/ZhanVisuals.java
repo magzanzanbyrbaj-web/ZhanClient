@@ -160,7 +160,12 @@ public class ZhanVisuals implements ClientModInitializer {
 
         if (id == null) return;
 
-        Item wantedItem = BuiltInRegistries.ITEM.get(id);
+        Item wantedItem = BuiltInRegistries.ITEM
+            .getOptional(id)
+            .map(reference -> reference.value())
+            .orElse(null);
+
+        if (wantedItem == null) return;
 
         for (int slot = 0; slot < 36; slot++) {
             ItemStack stack = mc.player.getInventory().getItem(slot);
