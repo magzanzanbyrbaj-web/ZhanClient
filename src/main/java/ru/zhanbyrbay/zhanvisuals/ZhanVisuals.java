@@ -114,6 +114,7 @@ public class ZhanVisuals implements ClientModInitializer {
 
         loadSettings();
         HudConfig.load();
+        BindManager.init(); // Инициализация биндов
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
 
@@ -139,7 +140,7 @@ public class ZhanVisuals implements ClientModInitializer {
             updateMovement(client);
             updateSpeed(client);
 
-            // Обработка тиков новых модулей
+            // Обработка тиков модулей
             if (aimAssist) AimAssist.tick(client);
             if (attackAura) AttackAura.tick(client);
             if (autoInvis) AutoInvis.tick(client);
@@ -246,12 +247,13 @@ public class ZhanVisuals implements ClientModInitializer {
 
             p.setProperty("optimized", String.valueOf(optimized));
 
-            // Сохранение состояния новых модулей
             p.setProperty("aimAssist", String.valueOf(aimAssist));
             p.setProperty("attackAura", String.valueOf(attackAura));
             p.setProperty("autoInvis", String.valueOf(autoInvis));
             p.setProperty("autoMace", String.valueOf(autoMace));
             p.setProperty("antiSpam", String.valueOf(antiSpam));
+
+            BindManager.save(p); // Сохранение биндов
 
             try (var out = Files.newOutputStream(configFile)) {
                 p.store(out, "ZhanVisuals settings");
@@ -308,12 +310,13 @@ public class ZhanVisuals implements ClientModInitializer {
 
             optimized = Boolean.parseBoolean(p.getProperty("optimized", "false"));
 
-            // Загрузка состояния новых модулей
             aimAssist = Boolean.parseBoolean(p.getProperty("aimAssist", "false"));
             attackAura = Boolean.parseBoolean(p.getProperty("attackAura", "false"));
             autoInvis = Boolean.parseBoolean(p.getProperty("autoInvis", "false"));
             autoMace = Boolean.parseBoolean(p.getProperty("autoMace", "false"));
             antiSpam = Boolean.parseBoolean(p.getProperty("antiSpam", "true"));
+
+            BindManager.load(p); // Загрузка биндов
 
         } catch (IOException e) {
             System.err.println("[ZhanVisuals] Load error: " + e.getMessage());
