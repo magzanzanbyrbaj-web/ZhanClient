@@ -18,7 +18,7 @@ public class ZhanClickScreen extends Screen {
     private static final int HOVER = 0xFF292235;
 
     private static final String[] CATEGORIES = {
-        "Визуалы", "Интерфейс", "NoRender", "Движение", "Оптимизация"
+        "Визуалы", "Интерфейс", "Комбат", "NoRender", "Движение", "Оптимизация", "Утилиты"
     };
 
     private static final String[][] MODULES = {
@@ -40,6 +40,12 @@ public class ZhanClickScreen extends Screen {
             "Speedometer"
         },
         {
+            "AimAssist",
+            "AttackAura",
+            "AutoMace",
+            "AutoSwap"
+        },
+        {
             "No Particles",
             "No Weather",
             "No Pumpkin",
@@ -53,6 +59,10 @@ public class ZhanClickScreen extends Screen {
         },
         {
             "Performance Boost"
+        },
+        {
+            "AntiSpam",
+            "AutoInvis"
         }
     };
 
@@ -75,6 +85,12 @@ public class ZhanClickScreen extends Screen {
             "Показывает скорость передвижения."
         },
         {
+            "Плавная доводка до ближайшей цели.",
+            "Автоматическая атака врагов вокруг.",
+            "Автоматический выбор булавы при падении.",
+            "Быстрый обмен предметов с офхендом."
+        },
+        {
             "Отключает отображение частиц.",
             "Отключает отображение погоды.",
             "Скрывает текстуру тыквы.",
@@ -88,6 +104,10 @@ public class ZhanClickScreen extends Screen {
         },
         {
             "Уменьшает дальность прорисовки и симуляции."
+        },
+        {
+            "Предотвращает отправку одинаковых сообщений в чат.",
+            "Отслеживает эффект невидимости."
         }
     };
 
@@ -237,7 +257,7 @@ public class ZhanClickScreen extends Screen {
         );
 
         for (int i = 0; i < CATEGORIES.length; i++) {
-            int y = panelY + 61 + i * 37;
+            int y = panelY + 55 + i * 28;
             boolean selected = category.equals(CATEGORIES[i]);
 
             if (selected) {
@@ -246,16 +266,16 @@ public class ZhanClickScreen extends Screen {
                     panelX + 12,
                     y,
                     sidebarW - 21,
-                    29,
+                    25,
                     6,
                     0xFF352440
                 );
 
                 g.fill(
                     panelX + 12,
-                    y + 5,
+                    y + 4,
                     panelX + 14,
-                    y + 24,
+                    y + 21,
                     PURPLE
                 );
             }
@@ -264,7 +284,7 @@ public class ZhanClickScreen extends Screen {
                 CATEGORIES[i],
                 g,
                 panelX + 20,
-                y + 10,
+                y + 8,
                 selected ? LIGHT : MUTED
             );
         }
@@ -410,13 +430,13 @@ public class ZhanClickScreen extends Screen {
 
         // CATEGORIES
         for (int i = 0; i < CATEGORIES.length; i++) {
-            int y = panelY + 61 + i * 37;
+            int y = panelY + 55 + i * 28;
 
             if (
                 mx >= panelX + 8 &&
                 mx <= panelX + sidebarW &&
                 my >= y &&
-                my <= y + 29
+                my <= y + 25
             ) {
                 category = CATEGORIES[i];
                 return true;
