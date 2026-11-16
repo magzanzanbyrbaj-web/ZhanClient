@@ -1,4 +1,3 @@
-
 plugins {
     id 'net.fabricmc.fabric-loom-remap' version '1.14-SNAPSHOT'
     id 'maven-publish'
@@ -20,7 +19,6 @@ dependencies {
 }
 
 loom {
-    useLegacyMixinAp = true
     mixin {
         defaultRefmapName = "zhanvisuals.refmap.json"
     }
