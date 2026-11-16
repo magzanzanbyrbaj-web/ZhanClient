@@ -1,8 +1,11 @@
 package ru.zhanbyrbay.zhanvisuals;
 
+import com.mojang.brigadier.CommandDispatcher;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
@@ -11,24 +14,48 @@ import java.util.Map;
 import java.util.Properties;
 
 public class BindManager {
-    // Название модуля -> Код клавиши GLFW
     public static final Map<String, Integer> binds = new HashMap<>();
     private static final Map<Integer, Boolean> keyStates = new HashMap<>();
 
     public static void init() {
-        // Перехват отправки сообщений в чат (команды с точки)
-        ClientSendMessageEvents.ALLOW.register(message -> {
-            if (message.startsWith(".")) {
-                handleCommand(message);
-                return false; // Отменяем отправку сообщения на сервер
-            }
-            return true;
+        // Регистрация клиентских команд через официальный Fabric Client Command API (.bind ...)
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            dispatcher.register(ClientCommandManager.literal("bind")
+                .then(ClientCommandManager.literal("add")
+                    .then(ClientCommandManager.argument("module", com.mojang.brigadier.arguments.StringArgumentType.word())
+                        .then(ClientCommandManager.argument("key", com.mojang.brigadier.arguments.StringArgumentType.word())
+                            .executes(context -> {
+                                String module = com.mojang.brigadier.arguments.StringArgumentType.getString(context, "module");
+                                String keyName = com.mojang.brigadier.arguments.StringArgumentType.getString(context, "key").toUpperCase();
+                                handleAdd(module, keyName);
+                                return 1;
+                            })
+                        )
+                    )
+                )
+                .then(ClientCommandManager.literal("remove")
+                    .then(ClientCommandManager.argument("module", com.mojang.brigadier.arguments.StringArgumentType.word())
+                        .executes(context -> {
+                            String module = com.mojang.brigadier.arguments.StringArgumentType.getString(context, "module");
+                            handleRemove(module);
+                            return 1;
+                        })
+                    )
+                )
+                .then(ClientCommandManager.literal("list")
+                    .executes(context -> {
+                        handleList();
+                        return 1;
+                    })
+                )
+            );
         });
 
         // Проверка нажатия клавиш каждый тик клиента
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.getWindow() == null || client.player == null) return;
-            long window = client.getWindow().window();
+            // Исправлено получение дескриптора окна (handle)
+            long window = client.getWindow().handle();
 
             for (Map.Entry<String, Integer> entry : binds.entrySet()) {
                 String module = entry.getKey();
@@ -37,7 +64,6 @@ public class BindManager {
                 boolean isDown = GLFW.glfwGetKey(window, keyCode) == GLFW.GLFW_PRESS;
                 boolean wasDown = keyStates.getOrDefault(keyCode, false);
 
-                // Срабатывает ровно один раз при нажатии (чтобы модуль не переключался бесконечно)
                 if (isDown && !wasDown) {
                     ZhanVisuals.toggleModule(module);
                     boolean state = ZhanVisuals.isEnabled(module);
@@ -51,45 +77,43 @@ public class BindManager {
         });
     }
 
-    private static void handleCommand(String command) {
+    private static void handleAdd(String module, String keyName) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        String[] args = command.substring(1).split(" ");
-        if (args.length >= 3 && args[0].equalsIgnoreCase("bind")) {
-            String subAction = args[1]; // add / remove
-            if (subAction.equalsIgnoreCase("add")) {
-                String module = args[2];
-                String keyName = args[3].toUpperCase();
-
-                int keyCode = parseKey(keyName);
-                if (keyCode != -1) {
-                    binds.put(module, keyCode);
-                    mc.player.displayClientMessage(Component.literal("§5[ZhanVisuals] §aМодуль §d" + module + " §aпривязан к клавише §e" + keyName), false);
-                    ZhanVisuals.saveSettings();
-                } else {
-                    mc.player.displayClientMessage(Component.literal("§c[ZhanVisuals] Неизвестная клавиша: " + keyName), false);
-                }
-            } else if (subAction.equalsIgnoreCase("remove")) {
-                String module = args[2];
-                if (binds.remove(module) != null) {
-                    mc.player.displayClientMessage(Component.literal("§5[ZhanVisuals] §cБинд для модуля §d" + module + " §cудален"), false);
-                    ZhanVisuals.saveSettings();
-                } else {
-                    mc.player.displayClientMessage(Component.literal("§c[ZhanVisuals] Бинд для модуля " + module + " не найден"), false);
-                }
-            }
-        } else if (args.length >= 2 && args[0].equalsIgnoreCase("bind") && args[1].equalsIgnoreCase("list")) {
-            mc.player.displayClientMessage(Component.literal("§5[ZhanVisuals] §fАктивные бинды:"), false);
-            if (binds.isEmpty()) {
-                mc.player.displayClientMessage(Component.literal(" §7Нет активных биндов."), false);
-            } else {
-                for (Map.Entry<String, Integer> entry : binds.entrySet()) {
-                    mc.player.displayClientMessage(Component.literal(" §7- §d" + entry.getKey() + " §7: §e" + getKeyName(entry.getValue())), false);
-                }
-            }
+        int keyCode = parseKey(keyName);
+        if (keyCode != -1) {
+            binds.put(module, keyCode);
+            mc.player.displayClientMessage(Component.literal("§5[ZhanVisuals] §aМодуль §d" + module + " §aпривязан к клавише §e" + keyName), false);
+            ZhanVisuals.saveSettings();
         } else {
-            mc.player.displayClientMessage(Component.literal("§cИспользование: .bind add <Модуль> <Клавиша> | .bind remove <Модуль> | .bind list"), false);
+            mc.player.displayClientMessage(Component.literal("§c[ZhanVisuals] Неизвестная клавиша: " + keyName), false);
+        }
+    }
+
+    private static void handleRemove(String module) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+
+        if (binds.remove(module) != null) {
+            mc.player.displayClientMessage(Component.literal("§5[ZhanVisuals] §cБинд для модуля §d" + module + " §cудален"), false);
+            ZhanVisuals.saveSettings();
+        } else {
+            mc.player.displayClientMessage(Component.literal("§c[ZhanVisuals] Бинд для модуля " + module + " не найден"), false);
+        }
+    }
+
+    private static void handleList() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+
+        mc.player.displayClientMessage(Component.literal("§5[ZhanVisuals] §fАктивные бинды:"), false);
+        if (binds.isEmpty()) {
+            mc.player.displayClientMessage(Component.literal(" §7Нет активных биндов."), false);
+        } else {
+            for (Map.Entry<String, Integer> entry : binds.entrySet()) {
+                mc.player.displayClientMessage(Component.literal(" §7- §d" + entry.getKey() + " §7: §e" + getKeyName(entry.getValue())), false);
+            }
         }
     }
 
